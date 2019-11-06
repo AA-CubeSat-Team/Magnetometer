@@ -1,0 +1,28 @@
+#include "../Lib/I2Cdrive.h"
+#include "../Lib/commonLib.h"
+#include "HMC5983.h"
+
+
+int main(){
+  /*
+    Open up the I2C bus. This will need 
+    to be called first before accessing any
+    I2C tools.
+   */
+  int in_stat = connect_i2c();
+
+  /*
+    Setting a connection to HMC5983 via I2C. 
+    If you want to connect to a different slave chip
+    via I2C, then run the following command
+
+    i2c_connect_2_slave(SLAVE_ADDRESS);
+
+   */
+  connect_2_hmc5983_via_I2C();
+
+  /*
+    Disconnect from the I2C bus
+   */
+  disconnect_i2c();
+}

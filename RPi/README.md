@@ -1,0 +1,1 @@
+We might be using different magnetometer, so best to keep the files separated. 
