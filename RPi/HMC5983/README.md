@@ -17,8 +17,8 @@ Interfacing with the magnetometer HMC5983 with Raspberry Pi using I2C bus.
      * [Getting Measurement Reading](#getting-measurement-reading)
      * [Calibrating HMC5983](#calibrating-hmc5983)
 - [Example](#example)
-     * [Example 1](#example1)
-     * [Example 2](#example2)
+     * [Example 1](#example-1)
+     * [Example 2](#example-2)
 - [Useful Links](#useful-links)
 
 
@@ -144,7 +144,7 @@ To communicate with the HMC5983, you'll need to first set set the connection bet
 
 ### Data Output Rate
 
-HMC5983 is capable of changing the output rate of the requested data. To change the data output rate on the HMC5983, you'll need to write to the Configuration Register A on the chip, which has an address of 0x00. A function called `hmc5983_set_cra_reg(reg_val)` is able to send `reg_val` to the Configuration Register A. The table below are some of the possible value with the associated data output rate
+HMC5983 is capable of changing the output rate of the requested data. To change the data output rate on the HMC5983, you'll need to write to the Configuration Register A on the chip, which has an address of 0x00. A function called `hmc5983_set_cra(reg_val)` is able to send `reg_val` to the Configuration Register A. The table below are some of the possible value with the associated data output rate
 
 | reg_val   | Data rate (Hz)     | 
 | :--------:|:-------------:| 
@@ -160,13 +160,13 @@ HMC5983 is capable of changing the output rate of the requested data. To change 
 So if you want to set the data output rate to 15 Hz, then call the following function:
 
 ```C
-hmc5983_set_cra_reg(0x10);
+hmc5983_set_cra(0x10);
 ```
 
 If you want to know the current data output rate, the call the following function:
 
 ```C
-unsigned char cra_val = hmc5983_get_cra_reg();
+unsigned char cra_val = hmc5983_get_cra();
 ```
 
 Note that Configuration Register A is also responsible for setting the measurement mode, and adjusting this will add some bias to the data. I'm assuming that we will always be in normal measurement mode, but if you want to add some bias to the data, then please refer to the [datasheet](http://www.farnell.com/datasheets/1509871.pdf)
@@ -175,7 +175,7 @@ Note that Configuration Register A is also responsible for setting the measureme
 
 ### Gain
 
-HMC5983 is also capable of adjusting the gain setting, where you can adjust the measurement reading. The lower the gain, the higher the resolution. To change the gain setting on the chip, use the function `hmc5983_set_gain(reg_val)`. The table below shows the possible `reg_val` with the associated gain settings.
+HMC5983 is also capable of adjusting the gain setting, where you can adjust the measurement reading. The lower the gain, the higher the resolution. To change the gain setting on the chip, use the function `hmc5983_set_crb(reg_val)`. The table below shows the possible `reg_val` with the associated gain settings.
 
 
 | reg_val   | Recommended Sensor Field (Gauss)   |  Digital Resolution (mG/LSB) |
@@ -192,13 +192,13 @@ HMC5983 is also capable of adjusting the gain setting, where you can adjust the 
 So if you think you're in a sensor field range of +- 4.7 Guass, then run the following function:
 
 ```C
-hmc5983_set_gain(0xA0);
+hmc5983_set_crb(0xA0);
 ```
 
 To see the current gain setting, run the following function:
 
 ```C
-unsigned char mode = hmc5983_get_gain();
+unsigned char mode = hmc5983_get_crb();
 ```
 
 [Back to Table of Contents](#table-of-contents)
@@ -269,16 +269,16 @@ There are some examples so that you can get used to the HMC5983.
 
 ### Example 1
 
-This is a very simple example of trying to open the I2C bus, connect to HMC5983, and then disconnect. To make and run the executable, type in the following command in the terminal:
+This is a very simple example of trying to open the I2C bus, connect to HMC5983, change the mode to continuous, gather some data, and then disconnect. To make and run the executable, type in the following command in the terminal:
 
 ```
 make example1
 ./example1
 ```
 
-### Example2
+### Example 2
 
-This example shows how to change the operating mode on the chip. If the mode is on any other mode than single-measurement mode, then change it to single-measurement mode. If it's already in single-measurement mode, then change it to idel mode. To make and run the executable, type in the following command in the terminal:
+This example shows how to change the operating mode on the chip. If the mode is on any other mode than single-measurement mode, then change it to single-measurement mode. If it's already in single-measurement mode, then do nothing. After getting the first data set, we get another. To make and run the executable, type in the following command in the terminal:
 
 ```
 make example2

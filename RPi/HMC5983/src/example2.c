@@ -17,6 +17,8 @@ int main(){
     printf("Make sure the i2c-tool is installed and you have root access\n");
     return 0;
   }
+
+  
   /*
     Setting a connection to HMC5983 via I2C. 
     If you want to connect to a different slave chip
@@ -41,7 +43,8 @@ int main(){
   int modeStat =0;
   unsigned char pre_mode = hmc5983_get_mode();
   if(pre_mode == 0x01){
-    printf("\nSetting the mode to idle mode\n");
+    printf("\nCurrent mode is already single-measurement mode\n");
+    
   }else{
     printf("\nSetting the mode to single-measurement mode\n");
     modeStat = hmc5983_set_mode(0x01);
@@ -49,13 +52,16 @@ int main(){
       printf("\nError in setting mode. Make sure that the wires are connected\n");
       return 0;
     }
+    printf("\nGetting the operating mode again to see if it changed.\n");
+    unsigned char post_mode = hmc5983_get_mode();
+    printf("\nCurent Operating mode is 0x%02x\n", post_mode);
   }
   
-  printf("\nGetting the operating mode again to see if it changed.\n");
-  unsigned char mode = hmc5983_get_mode();
-
+  printf("\nCurrent cra value is 0x%02x\n", hmc5983_get_cra());
+  
+  
   int s = hmc5983_get_status();
-  printf("The current status is %d\n", s);
+  printf("The current status is 0x%02x\n", s);
   
   sleep(1);
   
@@ -74,8 +80,22 @@ int main(){
 
   printf("\nAfter getting the measruement, the single mode changes to\n");
   printf("idle mode. So now checking if it did.\n");
-  unsigned char mode3 = hmc5983_get_mode();
+  unsigned char after_mode = hmc5983_get_mode();
+  printf("\nAfter measurement, mode is 0x%02x\n", after_mode);
 
+  printf("\nSetting mode back to single-measurement mode\n");
+  modeStat = hmc5983_set_mode(0x01);
+  sleep(2);
+  
+  printf("\nReading another measurement data\n");
+  x = hmc5983_get_magnetic_x();
+  y = hmc5983_get_magnetic_y();
+  z = hmc5983_get_magnetic_z();
+
+  printf("\nThe measurements are \n");
+  printf("\tx: %f G\n", x);
+  printf("\ty: %f G\n", y);
+  printf("\tz: %f G\n", z);
   
   /*
     Disconnect from the I2C bus

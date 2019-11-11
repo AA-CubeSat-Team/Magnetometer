@@ -11,5 +11,6 @@
 #include <sys/ioctl.h>
 #include <linux/i2c-dev.h>
 #include <math.h>
+#include <signal.h>
 
 #endif

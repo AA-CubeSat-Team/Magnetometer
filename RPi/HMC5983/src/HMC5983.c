@@ -30,7 +30,7 @@ static struct hmc5983_Var3 mag_scale = {1, 1, 1};
  */
 static float hmc5983_convert_hex_2_field(int16_t val){
   float field = 0.0;
-  unsigned char gainVal =  hmc5983_get_gain();
+  unsigned char gainVal =  hmc5983_get_crb();
   if(gainVal == HMC5983Gain08)
     field = val/1370.0;
   else if(gainVal == HMC5983Gain13)
@@ -70,7 +70,7 @@ and measurement mode.
 Parameters:: craSetting: Refer to Table 3 - 6 for cra register setting
 Returns:: 0 if success, 1 if failed.
  */
-int hmc5983_set_cra_reg(unsigned char craSetting){
+int hmc5983_set_cra(unsigned char craSetting){
   int i = 0;
   while(i2c_set_register_val(HMC5983ConfRegA, craSetting) && i < 10){
     printf("Error in setting CRA REG. Trying again\n");
@@ -92,10 +92,10 @@ Parameters:: None
 Returns:: The cra register value
 
  */
-unsigned char hmc5983_get_cra_reg(){
+unsigned char hmc5983_get_cra(){
   int i  = i2c_get_register_val(HMC5983ConfRegA);
   unsigned char res = i2c_get_buffer_index(i);
-  printf("The current cra valus is 0x%02x\n", res);
+  //printf("The current cra valus is 0x%02x\n", res);
   return res;
 }
 
@@ -110,7 +110,7 @@ Returns:: The value of the configuration register b. Refer
 unsigned char hmc5983_get_mode(){
   int i = i2c_get_register_val(HMC5983ModeReg);
   unsigned char res = i2c_get_buffer_index(i);
-  printf("The current mode is 0x%02x\n", res);
+  //printf("The current mode is 0x%02x\n", res);
   return res;
 }
 
@@ -151,7 +151,7 @@ int hmc5983_set_mode(unsigned char deviceMode){
   Returns:: The gain setting of the device.
 
  */
-unsigned char hmc5983_get_gain(){
+unsigned char hmc5983_get_crb(){
   int i = i2c_get_register_val(HMC5983ConfRegB);
   unsigned char res = i2c_get_buffer_index(i);
   return res;
@@ -166,7 +166,7 @@ unsigned char hmc5983_get_gain(){
                             the gain value you want to set.
   Returns:: The gain setting of the device. 
  */
-int hmc5983_set_gain(unsigned char gainSetting){
+int hmc5983_set_crb(unsigned char gainSetting){
   int i = 0;
   while(i2c_set_register_val(HMC5983ConfRegB, gainSetting) && i < 10){
     printf("Error in setting gain register. Trying again\n");
@@ -252,7 +252,7 @@ float hmc5983_get_magnetic_y(){
  device in Gauss
  */
 float hmc5983_get_raw_magnetic_z(){
-int firstInd = i2c_get_register_val(HMC5983ZMSB);
+  int firstInd = i2c_get_register_val(HMC5983ZMSB);
   int secondInd = i2c_get_register_val(HMC5983ZLSB);
 
   if(firstInd == -1 || secondInd == -1)

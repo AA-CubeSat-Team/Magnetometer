@@ -36,12 +36,12 @@ struct hmc5983_Var3{
 
 
 int connect_2_hmc5983_via_I2C();
-int hmc5983_set_cra_reg(unsigned char craSetting);
-unsigned char hmc5983_get_cra_reg();
+int hmc5983_set_cra(unsigned char craSetting);
+unsigned char hmc5983_get_cra();
 unsigned char hmc5983_get_mode();
 int hmc5983_set_mode(unsigned char deviceMode);
-unsigned char hmc5983_get_gain();
-int hmc5983_set_gain(unsigned char gainSetting);
+unsigned char hmc5983_get_crb();
+int hmc5983_set_crb(unsigned char gainSetting);
 float hmc5983_get_raw_magnetic_x();
 float hmc5983_get_magnetic_x();
 float hmc5983_get_raw_magnetic_y();

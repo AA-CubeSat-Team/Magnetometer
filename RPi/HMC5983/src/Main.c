@@ -100,13 +100,13 @@ int main(int argc, char **argv){
 
   // Connect to the HMC5983 chip
   connect_2_hmc5983_via_I2C();
-  hmc5983_set_cra_reg(0x90);
+  hmc5983_set_cra(0x90);
   hmc5983_set_mode(0x00);
   //unsigned char m = hmc5983_get_mode();
-  hmc5983_set_gain(0x40);
+  hmc5983_set_crb(0x40);
   sleep(1);  // Wait for HMC5983 to setup
 
-  unsigned char gain_hex = hmc5983_get_gain();
+  unsigned char gain_hex = hmc5983_get_crb();
   printf("The gain hex is 0x%x\n", gain_hex);
   
   if(argc == 2){
