@@ -16,9 +16,10 @@ Interfacing with the magnetometer HMC5983 with Raspberry Pi using I2C bus.
      * [Identification Register](#identification-register)
      * [Getting Measurement Reading](#getting-measurement-reading)
      * [Calibrating HMC5983](#calibrating-hmc5983)
-- [Example](#example)
+- [Examples](#example)
      * [Example 1](#example-1)
      * [Example 2](#example-2)
+     * [Example 3](#example-3)
 - [Useful Links](#useful-links)
 
 
@@ -276,7 +277,7 @@ There are some examples so that you can get used to the HMC5983.
 
 ### Example 1
 
-This is a very simple example of trying to open the I2C bus, connect to HMC5983, change the mode to continuous, gather some data, and then disconnect. To make and run the executable, type in the following command in the terminal:
+This is a very simple example of trying to open the I2C bus, connect to HMC5983, change the mode to continuous, gather some data, and then disconnect. To make and run the executable, run the following command in the terminal:
 
 ```
 make example1.exe
@@ -287,7 +288,7 @@ make example1.exe
 
 ### Example 2
 
-This example shows how to change the operating mode on the chip. If the mode is on any other mode than single-measurement mode, then change it to single-measurement mode. If it's already in single-measurement mode, then do nothing. After getting the first data set, we get another. To make and run the executable, type in the following command in the terminal:
+This example shows how to change the operating mode on the chip. If the mode is on any other mode than single-measurement mode, then change it to single-measurement mode. If it's already in single-measurement mode, then do nothing. After getting the first data set, we get another. To make and run the executable, run the following command in the terminal:
 
 ```
 make example2.exe
@@ -296,11 +297,22 @@ make example2.exe
 
 [Back to Table of Contents](#table-of-contents)
 
-### Example 3
+### Exapmle 3
 
-Going to implement the easy calibration method
+This example shows how if you set an invalid value to the Configuration Register A (0x00), the measurement data output won't change. To make and run the executable, run the following command in the terminal:
+
+```
+make example3.exe
+./example3.exe
+```
+
+[Back to Table of Contents](#table-of-contents)
 
 ### Example 4
+
+Going to demonstrate the easy calibration method
+
+### Example 5
 
 Going to implement the more sophisticated calibration method
 

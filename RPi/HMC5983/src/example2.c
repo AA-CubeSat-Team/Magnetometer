@@ -3,7 +3,29 @@
 #include "HMC5983.h"
 
 
+/*
+  Handler for SIGINT, caused by
+  Ctrl-C at keyboard
+ */
+void handle_sigint(int sig){
+    /*
+    Disconnect from the I2C bus
+   */
+  printf("\nDisconnecting from I2C Bus\n");
+  int disStat = disconnect_i2c();
+  if(disStat){
+    printf("\nMake sure that no wires were disconnected\n");
+  }
+  exit(0);
+}
+
 int main(){
+
+  /*
+    Catch SIGINT
+   */
+  signal(SIGINT, handle_sigint);
+  
   printf("Starting program\n");
   
   /*

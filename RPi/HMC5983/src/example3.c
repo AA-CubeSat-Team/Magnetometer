@@ -2,8 +2,28 @@
 #include "../Lib/commonLib.h"
 #include "HMC5983.h"
 
+/*
+  Handler for SIGINT, caused by
+  Ctrl-C at keyboard
+ */
+void handle_sigint(int sig){
+    /*
+    Disconnect from the I2C bus
+   */
+  printf("\nDisconnecting from I2C Bus\n");
+  int disStat = disconnect_i2c();
+  if(disStat){
+    printf("\nMake sure that no wires were disconnected\n");
+  }
+  exit(0);
+}
 
 int main(){
+  /*
+    Catch SIGINT
+   */
+  signal(SIGINT, handle_sigint);
+  
   printf("Starting program\n");
   
   /*
@@ -34,27 +54,74 @@ int main(){
     return 0;
   }
 
-  printf("\nGetting the current operating mode.\n");
-  int modeStat =0;
-  unsigned char pre_mode = hmc5983_get_mode();
-  if(pre_mode == 0x01){
-    printf("\nSetting the mode to idle mode\n");
-    modeStat = hmc5983_set_mode(0x03);
-    if(modeStat){
-      printf("\nError in setting mode. Make sure that the wires are connected\n");
-      return 0;
-    }
-  }else{
-    printf("\nSetting the mode to single-measurement mode\n");
-    modeStat = hmc5983_set_mode(0x01);
-    if(modeStat){
-      printf("\nError in setting mode. Make sure that the wires are connected\n");
-      return 0;
-    }
-  }
+  /*
+    Setting the Configuration Register to an invalid value. This will 
+    cause the measurement data to not be updated. 
+   */
+  unsigned char invalid_cra = 0x09;
+  printf("\nSetting the Configuration Register A to 0x%02x\n", invalid_cra);
+  hmc5983_set_cra(invalid_cra);
+  hmc5983_set_mode(0x01);
+  hmc5983_set_crb(0x40);
+  sleep(1);
   
-  printf("\nGetting the operating mode again to see if it changed.\n");
-  unsigned char mode = hmc5983_get_mode();
+  float x = hmc5983_get_magnetic_x();
+  float y = hmc5983_get_magnetic_y();
+  float z = hmc5983_get_magnetic_z();
+
+  printf("The magnetic field in X is %.2f G\n", x);
+  printf("The magnetic field in Y is %.2f G\n", y);
+  printf("The magnetic field in Z is %.2f G\n", z);
+
+  printf("\nMove the sensor around\n");
+  printf("Waiting a few seconds, to see if value changes\n");
+  sleep(5);
+  hmc5983_set_mode(0x01);
+
+  /*
+    These measurement should be very similar to the previous
+    data even if we move the sensor, because of the invalid value
+    in Configuration Register A.
+   */
+  x = hmc5983_get_magnetic_x();
+  y = hmc5983_get_magnetic_y();
+  z = hmc5983_get_magnetic_z();
+
+  printf("The magnetic field in X is %.2f G\n", x);
+  printf("The magnetic field in Y is %.2f G\n", y);
+  printf("The magnetic field in Z is %.2f G\n", z);
+
+  /*
+    Now setting a valid value in Configuration Register A. This
+    should fix the problem we had before. 
+   */
+  unsigned char valid_cra = 0x10;
+  printf("\nNow setting the Configuration Register A to 0x%02x\n", valid_cra);
+  hmc5983_set_cra(valid_cra);
+  hmc5983_set_mode(0x01);
+  sleep(5);
+
+  x = hmc5983_get_magnetic_x();
+  y = hmc5983_get_magnetic_y();
+  z = hmc5983_get_magnetic_z();
+
+  printf("The magnetic field in X is %.2f G\n", x);
+  printf("The magnetic field in Y is %.2f G\n", y);
+  printf("The magnetic field in Z is %.2f G\n", z);
+
+  
+  printf("\nMove the sensor around\n");
+  printf("Waiting a few seconds, to see if value changes\n");
+  hmc5983_set_mode(0x01);
+  sleep(5);
+
+  x = hmc5983_get_magnetic_x();
+  y = hmc5983_get_magnetic_y();
+  z = hmc5983_get_magnetic_z();
+
+  printf("The magnetic field in X is %.2f G\n", x);
+  printf("The magnetic field in Y is %.2f G\n", y);
+  printf("The magnetic field in Z is %.2f G\n", z);
   
   /*
     Disconnect from the I2C bus
