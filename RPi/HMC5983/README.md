@@ -7,7 +7,7 @@ Interfacing with the magnetometer HMC5983 with Raspberry Pi using I2C bus.
 - [Software Setup](#software-setup)
 - [Makefile](#makefile)
 - [Calibration](#calibration)
-- [Sample Code Snipets](#sample-code-snipets)
+- [Brief overview of code](#brief-overview-of-code)
      * [Opening and Closing the I2C bus](#opening-and-closing-the-i2c-bus)
      * [Connect to HMC5983](#connect-to-hmc5983)
      * [Data Output Rate](#data-output-rate)
@@ -67,6 +67,13 @@ and you should see something familiar being printed out
 
 If there's a hexadecimal value being printed out, then the i2c-tool was able to detect a slave chip on the I2C bus. The I2C slave address of the HMC5983 is 0x1E, so if you run the command above and see 0x1E then you were successfully able to connect to the HMC5983 throguh I2C. 
 
+If Linux says that you don't have i2cdetect, then install 'i2c-tool'using the following commands:
+
+```
+sudo apt-get update
+sudo apt-get install i2c-tools
+```
+
 [Back to Table of Contents](#table-of-contents)
 
 ## Makefile
@@ -109,7 +116,7 @@ To calibrate the error, we do need to record some measurements and the magnetome
 
 [Back to Table of Contents](#table-of-contents)
 
-## Sample Code Snipets
+## Brief overview of code
 
 In this section, sample codes are provided in how to communicate with the HMC5983 through the I2C bus. 
 
@@ -263,7 +270,7 @@ flaot z = hmc5983_get_magnetic_z();
  
 [Back to Table of Contents](#table-of-contents)
  
-## Example
+## Examples
 
 There are some examples so that you can get used to the HMC5983. 
 
@@ -272,19 +279,30 @@ There are some examples so that you can get used to the HMC5983.
 This is a very simple example of trying to open the I2C bus, connect to HMC5983, change the mode to continuous, gather some data, and then disconnect. To make and run the executable, type in the following command in the terminal:
 
 ```
-make example1
-./example1
+make example1.exe
+./example1.exe
 ```
+
+[Back to Table of Contents](#table-of-contents)
 
 ### Example 2
 
 This example shows how to change the operating mode on the chip. If the mode is on any other mode than single-measurement mode, then change it to single-measurement mode. If it's already in single-measurement mode, then do nothing. After getting the first data set, we get another. To make and run the executable, type in the following command in the terminal:
 
 ```
-make example2
-./example2
+make example2.exe
+./example2.exe
 ```
 
+[Back to Table of Contents](#table-of-contents)
+
+### Example 3
+
+Going to implement the easy calibration method
+
+### Example 4
+
+Going to implement the more sophisticated calibration method
 
 ## Useful Links
 
