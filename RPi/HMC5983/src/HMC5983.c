@@ -183,8 +183,10 @@ int hmc5983_set_crb(unsigned char gainSetting){
 /*
  Get the raw magnetic field in the X-direction of the 
  device in Gauss
+
+ Parameters:: apply_gain: convert value to Gauss based on gain
  */
-float hmc5983_get_raw_magnetic_x(){
+float hmc5983_get_raw_magnetic_x(unsigned char apply_gain){
   int firstInd = i2c_get_register_val(HMC5983XMSB);
   int secondInd = i2c_get_register_val(HMC5983XLSB);
 
@@ -195,9 +197,10 @@ float hmc5983_get_raw_magnetic_x(){
   unsigned char secondByte = i2c_get_buffer_index(secondInd); 
   //printf("Data recieved for Mag X is 0x%02x%02x\n", firstByte, secondByte);
 
-  int16_t byteVal= (firstByte << 8| (secondByte));
-  float fieldVal = hmc5983_convert_hex_2_field(byteVal);
-  
+  float fieldVal= (firstByte << 8| (secondByte));
+  if(apply_gain){
+    fieldVal = hmc5983_convert_hex_2_field(fieldVal);
+  }
   return fieldVal;
 }
 
@@ -206,7 +209,7 @@ float hmc5983_get_raw_magnetic_x(){
  device in Gauss
  */
 float hmc5983_get_magnetic_x(){
-  float fieldVal = hmc5983_get_raw_magnetic_x();
+  float fieldVal = hmc5983_get_raw_magnetic_x(1);
   if(isnan(fieldVal))
     return NAN;
   fieldVal = (fieldVal - mag_offset.x) * mag_scale.x;
@@ -216,9 +219,10 @@ float hmc5983_get_magnetic_x(){
 /*
  Get the raw magnetic field in the Y-direction of the 
  device in Gauss
- */
-float hmc5983_get_raw_magnetic_y(){
 
+ Parameters:: apply_gain: if 1 convert value to Gauss based on gain
+ */
+float hmc5983_get_raw_magnetic_y(unsigned char apply_gain){
   int firstInd = i2c_get_register_val(HMC5983YMSB);
   int secondInd = i2c_get_register_val(HMC5983YLSB);
 
@@ -229,9 +233,10 @@ float hmc5983_get_raw_magnetic_y(){
   unsigned char secondByte = i2c_get_buffer_index(secondInd); 
   //printf("Data recieved for Mag Y is 0x%02x%02x\n", firstByte, secondByte);
 
-  int16_t byteVal= (firstByte << 8| (secondByte));
-  float fieldVal = hmc5983_convert_hex_2_field(byteVal);
-  
+  float fieldVal= (firstByte << 8| (secondByte));
+  if(apply_gain){
+    fieldVal = hmc5983_convert_hex_2_field(fieldVal);
+  }
   return fieldVal;
 }
 
@@ -240,7 +245,7 @@ float hmc5983_get_raw_magnetic_y(){
  device in Gauss
  */
 float hmc5983_get_magnetic_y(){
-  float fieldVal = hmc5983_get_raw_magnetic_y();
+  float fieldVal = hmc5983_get_raw_magnetic_y(1);
   if (isnan(fieldVal))
     return NAN;
   fieldVal = (fieldVal - mag_offset.y) * mag_scale.y;
@@ -250,8 +255,10 @@ float hmc5983_get_magnetic_y(){
 /*
  Get the raw magnetic field in the Z-direction of the 
  device in Gauss
+
+ Parameters:: apply_gain: if 1 convert value to Gauss based on gain
  */
-float hmc5983_get_raw_magnetic_z(){
+float hmc5983_get_raw_magnetic_z(unsigned char apply_gain){
   int firstInd = i2c_get_register_val(HMC5983ZMSB);
   int secondInd = i2c_get_register_val(HMC5983ZLSB);
 
@@ -263,8 +270,10 @@ float hmc5983_get_raw_magnetic_z(){
   //printf("Data recieved for Mag Z is 0x%02x%02x\n", firstByte, secondByte);
 
 
-  int16_t byteVal= (firstByte << 8| (secondByte));
-  float fieldVal = hmc5983_convert_hex_2_field(byteVal);
+  float fieldVal= (firstByte << 8| (secondByte));
+  if(apply_gain){
+    fieldVal = hmc5983_convert_hex_2_field(fieldVal);
+  }
   return fieldVal;
 }
 
@@ -273,7 +282,7 @@ float hmc5983_get_raw_magnetic_z(){
  device in Gauss
  */
 float hmc5983_get_magnetic_z(){
-  float fieldVal = hmc5983_get_raw_magnetic_z();
+  float fieldVal = hmc5983_get_raw_magnetic_z(1);
   if(isnan(fieldVal))
     return NAN;
   fieldVal = (fieldVal - mag_offset.z ) * mag_scale.z;
@@ -327,13 +336,13 @@ void hmc5983_calibrate(){
   while(i < 1000){
     if(i%100 == 0)
       printf("Iteration %d\n", i);
-    x_m = hmc5983_get_raw_magnetic_x();   
+    x_m = hmc5983_get_raw_magnetic_x(1);   
     //printf("The magnetic field in X is %f Gauss\n", x_m);
   
-    y_m = hmc5983_get_raw_magnetic_y();
+    y_m = hmc5983_get_raw_magnetic_y(1);
     //printf("The magnetic field in Y is %f Gauss\n", y_m);
   
-    z_m = hmc5983_get_raw_magnetic_z();
+    z_m = hmc5983_get_raw_magnetic_z(1);
     //printf("The magnetic field in Z is %f Gauss\n", z_m);
 
     if(isnan(x_m) || isnan(y_m) || isnan(z_m)){
