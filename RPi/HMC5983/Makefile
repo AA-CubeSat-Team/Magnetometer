@@ -9,6 +9,8 @@ OBJ5 = ./src/example4.o ./Lib/I2Cdrive.o ./src/HMC5983.o
 OBJ6 = ./src/example5.o ./Lib/I2Cdrive.o ./src/HMC5983.o
 OBJ7 = ./src/example6.o ./Lib/I2Cdrive.o ./src/HMC5983.o
 
+QUICKHULL = ./src/quickhull.c 
+
 %.o: %.c $(DEPS)
 	$(cc) -c -o $@ $< $(CFLAGS)
 
@@ -35,5 +37,8 @@ example5.exe: $(OBJ6)
 example6.exe: $(OBJ7)
 	$(cc) -o $@ $^ $(CFLAGS)
 
+quickhull.exe: $(QUICKHULL)
+	$(cc) -o $@ $^ $(CFLAGS)
+
 clean :
-	rm ./src/Main.o ./src/example1.o ./src/example2.o ./src/example3.o ./src/HMC5983.o ./Lib/I2Cdrive.o example1.exe example2.exe example3.exe example4.exe example5.exe example6.exe main.exe 
+	rm ./src/Main.o ./src/example1.o ./src/example2.o ./src/example3.o ./src/HMC5983.o ./Lib/I2Cdrive.o example1.exe example2.exe example3.exe example4.exe example5.exe example6.exe quickhull.exe main.exe 

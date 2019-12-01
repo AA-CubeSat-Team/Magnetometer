@@ -1,0 +1,22 @@
+#include "../Lib/commonLib.h"
+
+int main(){
+  int n = 100;
+  float x[n];
+  float y[n];
+
+  float upper = 5;
+  float lower = -5;
+
+  for(int i = 0; i < n; i++){
+    x[i] = (rand() % (upper - lower + 1)) + lower;
+    y[i] = (rand() % (upper - lower + 1)) + lower;
+
+    printf("x[%d] = %f", i, x[i]);
+    printf("y[%d] = %f", i, y[i]);
+
+  }
+  
+  
+
+}
