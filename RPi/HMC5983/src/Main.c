@@ -4,6 +4,9 @@
 
 // This is for the HMC5983 magnetometer.
 
+/*
+  THIS IS OUTDATED. 
+ */
 
 /*
   Create a file that takes the current time
