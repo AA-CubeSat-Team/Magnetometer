@@ -20,6 +20,8 @@ Interfacing with the magnetometer HMC5983 with Raspberry Pi using I2C bus.
      * [Example 1](#example-1)
      * [Example 2](#example-2)
      * [Example 3](#example-3)
+     * [Example 4](#example-4)
+     * [Example 5](#example-5)
 - [Useful Links](#useful-links)
 
 
@@ -310,9 +312,20 @@ make example3.exe
 
 ### Example 4
 
-Going to demonstrate the easy calibration method
+This example demonstrate the positive self test in the HMC5983 document. To make and run the executable, run the following command in the terminal:
+
+```
+make example4.exe
+./example4.exe
+```
+
+[Back to Table of Contents](#table-of-contents)
 
 ### Example 5
+
+Going to demonstrate the easy calibration method
+
+### Example 6
 
 Going to implement the more sophisticated calibration method
 
