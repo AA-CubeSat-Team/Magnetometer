@@ -1,0 +1,8 @@
+#include "../Lib/I2Cdrive.h"
+#include "../Lib/commonLib.h"
+#include "HMC5983.h"
+#include <gsl/gsl_matrix.h>
+
+int main(){
+
+}

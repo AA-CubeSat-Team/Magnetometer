@@ -77,6 +77,20 @@ sudo apt-get update
 sudo apt-get install i2c-tools
 ```
 
+If it's having a problem finding the file '/dev/i2-1' then open the  file /boot/config.txt, uncomment the following line, and reboot:
+
+```
+dtparam=i2c1=on 
+```
+
+To use the more complicated calibration method for the magnetometer, you'll also need to install GSL (GNU Scientific Library). You can install GSL onto Linux-like environment by using the following command:
+
+```
+sudo apt-get install libgsl-dev
+```
+
+Note that GSL does take about 75MB of space, and we don't need all of it, so finding some alternative might be best for the project. 
+
 [Back to Table of Contents](#table-of-contents)
 
 ## Makefile
