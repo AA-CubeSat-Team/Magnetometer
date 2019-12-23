@@ -10,6 +10,22 @@
   magnetometer using the sophisticated method.
  */
 
+gsl_matrix *A1;
+gsl_vector *b;
+double F = 1;   // Default is 1. 
+
+void __attribute__ ((destructor))  dtor() {
+  if(A1 != NULL){
+    gsl_matrix_free(A1);
+  }
+
+  if(b != NULL){
+    gsl_vector_free(b);
+  }
+
+  printf("Running deconstructor\n");
+}
+
 /*
   Handler for SIGINT, caused by
   Ctrl-C at keyboard
@@ -23,6 +39,14 @@ void handle_sigint(int sig){
   if(disStat){
     printf("\nMake sure that no wires were disconnected\n");
   }
+
+  if(A1 != NULL){
+    gsl_matrix_free(A1);
+  }
+  if(b != NULL){
+    gsl_vector_free(b);
+  }
+  
   exit(0);
 }
 
@@ -30,7 +54,7 @@ int print_matrix(gsl_matrix * ma, int m, int n){
   for(int i = 0; i < m; i++){
     for(int j = 0; j < n; j++){
       double val = gsl_matrix_get(ma, i, j);
-      printf("%f, ", val);
+      printf("%.2f, ", val);
       
     }
     printf("\n");
@@ -38,7 +62,7 @@ int print_matrix(gsl_matrix * ma, int m, int n){
   printf("\n");
 }
 
-int ellipsoid_fit(double *x ,double *y, double* z, int size_xyz){
+int ellipsoid_fit(double *x ,double *y, double* z, int N){
   double Cmatrix[] = {-1,  1,  1,  0,  0,  0,
                        1, -1,  1,  0,  0,  0,
                        1,  1, -1,  0,  0,  0,
@@ -46,17 +70,147 @@ int ellipsoid_fit(double *x ,double *y, double* z, int size_xyz){
                        0,  0,  0,  0, -4,  0,
                        0,  0,  0,  0,  0, -4};
   // A matrix view is a temporary matrix stored on stack
-  gsl_matrix_view m = gsl_matrix_view_array (Cmatrix,6, 6);
-  gsl_permutation *p = gsl_permutation_alloc(6);
+  gsl_matrix_view Cinv = gsl_matrix_view_array (Cmatrix,6, 6);
+  
+  double tempS[100] = {0};
+  
+  gsl_matrix * D = gsl_matrix_alloc(10, N);
+  gsl_matrix_view S = gsl_matrix_view_array(tempS, 10, 10);
+
+  for(int i = 0 ; i < N; i++){
+    gsl_matrix_set(D, 0, i, gsl_pow_2(x[i]));
+    gsl_matrix_set(D, 1, i, gsl_pow_2(y[i]));
+    gsl_matrix_set(D, 2, i, gsl_pow_2(z[i]));
+
+    gsl_matrix_set(D, 3, i, 2*y[i]*z[i]);
+    gsl_matrix_set(D, 4, i, 2*x[i]*z[i]);
+    gsl_matrix_set(D, 5, i, 2*x[i]*y[i]);
+
+    gsl_matrix_set(D, 6, i, 2*x[i]);
+    gsl_matrix_set(D, 7, i, 2*y[i]);
+    gsl_matrix_set(D, 8, i, 2*z[i]);
+    gsl_matrix_set(D, 9, i, 1);
+  }
+
+  //gsl_vector_fprintf(stdout, &x2.vector, "%g");
+
+  //print_matrix(D, 10, 100);
+
+  gsl_blas_dgemm(CblasNoTrans, CblasTrans, 1.0, D, D, 0.0, &S.matrix);
+  print_matrix(&S.matrix, 10, 10);
+
+  gsl_matrix_view S11 = gsl_matrix_submatrix(&S.matrix, 0, 0, 6, 6);
+  gsl_matrix_view S22 = gsl_matrix_submatrix(&S.matrix, 6, 6, 4, 4);
+  gsl_matrix_view S12 = gsl_matrix_submatrix(&S.matrix, 0, 6, 6, 4);
+  gsl_matrix_view S21 = gsl_matrix_submatrix(&S.matrix, 6, 0, 4, 6);
+  printf("Testing S11\n");
+  print_matrix(&S11.matrix, 6, 6);
+
+  printf("texting S22\n");
+  print_matrix(&S22.matrix, 4, 4);
+
+  printf("Testing S12\n");
+  print_matrix(&S12.matrix, 6, 4);
+  
   int s2;
-  gsl_linalg_LU_decomp(&m.matrix, p, &s2);
-  print_matrix(&m.matrix, 6,6);
+  gsl_permutation *p = gsl_permutation_alloc(4);
+  gsl_linalg_LU_decomp(&S22.matrix, p, &s2);
+  //print_matrix(&m.matrix, 6,6);
 
-  gsl_matrix * invm = gsl_matrix_alloc(6,6);
-  gsl_linalg_LU_invert(&m.matrix, p, invm);
-  print_matrix(invm, 6,6);
+  gsl_matrix * invm = gsl_matrix_alloc(4,4);
+  gsl_linalg_LU_invert(&S22.matrix, p, invm);
+  //print_matrix(invm, 6,6);
 
+  gsl_matrix * tempE = gsl_matrix_alloc(4, 6);
+  gsl_blas_dgemm(CblasNoTrans, CblasNoTrans, 1.0, invm, &S21.matrix, 0.0, tempE);
+  gsl_matrix * tempE2 = gsl_matrix_alloc(6,6);
+  gsl_blas_dgemm(CblasNoTrans, CblasNoTrans, 1.0, &S12.matrix, tempE, 0.0, tempE2);
+
+  gsl_matrix *tempE3 = gsl_matrix_alloc(6,6);
+  gsl_matrix_memcpy( tempE3 , &S11.matrix);
+  gsl_matrix_sub(tempE3, tempE2);
+
+  gsl_matrix *invm2 = gsl_matrix_alloc(6,6);
+  int s3;
+  gsl_permutation* p2 = gsl_permutation_alloc(6);
+  gsl_linalg_LU_decomp(&Cinv.matrix, p2, &s3);
+  gsl_linalg_LU_invert(&Cinv.matrix, p2, invm2);
+
+  gsl_matrix *E = gsl_matrix_alloc(6,6);
+  gsl_blas_dgemm(CblasNoTrans, CblasNoTrans, 1.0, invm2, tempE3, 0.0, E);
+
+  gsl_vector_complex *eval = gsl_vector_complex_alloc(6);
+   gsl_matrix_complex *evec = gsl_matrix_complex_alloc (6, 6);
+
+  gsl_eigen_nonsymmv_workspace * w = gsl_eigen_nonsymmv_alloc (6);
+
+  gsl_eigen_nonsymmv (E, eval, evec, w);
+
+  gsl_eigen_nonsymmv_free (w);
+
+  gsl_eigen_nonsymmv_sort (eval, evec,
+                           GSL_EIGEN_SORT_VAL_DESC);
+
+  gsl_vector_complex_view v1_pre
+    = gsl_matrix_complex_column (evec, 0);
+  gsl_vector_view v1 =  gsl_vector_complex_real(&v1_pre.vector);
+  if(gsl_vector_get(&v1.vector, 0) < 0){
+    gsl_vector_scale(&v1.vector, -1);
+  }
+
+  printf("here\n");
+  double temp[6];
+  gsl_vector_view v2 = gsl_vector_view_array(temp, 4);
+  gsl_blas_dgemv(CblasNoTrans, -1.0, tempE, &v1.vector, 0, &v2.vector);
+
+
+  double v10 = gsl_vector_get(&v1.vector, 0);
+  double v11 = gsl_vector_get(&v1.vector, 1);
+  double v12 = gsl_vector_get(&v1.vector, 2);
+  double v13 = gsl_vector_get(&v1.vector, 3);
+  double v14 = gsl_vector_get(&v1.vector, 4);
+  double v15 = gsl_vector_get(&v1.vector, 5);
+
+  double v20 = gsl_vector_get(&v2.vector, 0);
+  double v21 = gsl_vector_get(&v2.vector, 1);
+  double v22 = gsl_vector_get(&v2.vector, 2);
+  double d = gsl_vector_get(&v2.vector, 3);
+  
+  double Marr[9] = {v10, v13, v14, v13, v11, v15, v14, v15, v12};
+  double narr[3] = {v20, v21, v22};
+
+  gsl_matrix_view M = gsl_matrix_view_array(Marr, 3, 3);
+  gsl_vector_view n2 = gsl_vector_view_array(narr, 3);
+  
+  gsl_matrix *invM = gsl_matrix_alloc(3,3);
+  int s4;
+  gsl_permutation* p3 = gsl_permutation_alloc(3);
+  gsl_linalg_LU_decomp(&M.matrix, p3, &s4);
+  gsl_linalg_LU_invert(&M.matrix, p3, invM);
+
+
+  b = gsl_vector_alloc(3);
+  gsl_blas_dgemv(CblasNoTrans, -1.0, invM, &n2.vector, 0, b);
+
+
+  A1 = gsl_matrix_alloc(3,3);
+  
+  
+  gsl_matrix_free(invM);
+  gsl_permutation_free(p3);
+  
+  gsl_vector_complex_free(eval);
+  gsl_matrix_complex_free(evec);
+  
   gsl_permutation_free(p);
+  gsl_matrix_free(D);
+  gsl_matrix_free(invm);
+  gsl_matrix_free(tempE);
+  gsl_matrix_free(tempE2);
+  gsl_matrix_free(tempE3);
+  gsl_matrix_free(invm2);
+  gsl_permutation_free(p2);
+  gsl_matrix_free(E);
 }
 
 int main(){
@@ -65,9 +219,17 @@ int main(){
    */
   signal(SIGINT, handle_sigint);
 
-  double x[100] = {0};
-  double y[100] = {0};
-  double z[100] = {0};
+  
+  double x[100];
+  double y[100];
+  double z[100];
+  int upper = 10;
+  int lower = -10;
+  for(int i = 0; i < 100; i++){
+    x[i] = (rand()% (upper - lower + 1))+lower;
+    y[i] = (rand()% (upper - lower + 1))+lower;
+    z[i] = (rand()% (upper - lower + 1))+lower;
+  }
   ellipsoid_fit(x, y, z, 100);
   return 0;
   
