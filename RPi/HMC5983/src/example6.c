@@ -10,9 +10,11 @@
   magnetometer using the sophisticated method.
  */
 
+#define CAL_SIZE 100
+
 gsl_matrix *A1;
 gsl_vector *b;
-double F = 1;   // Default is 1. 
+double F = 1.0;   // Default is 1. 
 
 void __attribute__ ((destructor))  dtor() {
   if(A1 != NULL){
@@ -62,6 +64,68 @@ int print_matrix(gsl_matrix * ma, int m, int n){
   printf("\n");
 }
 
+
+gsl_matrix* computeSqrtMatrix(gsl_matrix * M, int n){
+  gsl_matrix* res = gsl_matrix_alloc(n,n);
+  
+  gsl_vector_complex *eval = gsl_vector_complex_alloc (n);
+  gsl_matrix_complex *evec = gsl_matrix_complex_alloc (n, n);
+
+  gsl_eigen_nonsymmv_workspace * w =
+    gsl_eigen_nonsymmv_alloc (n);
+
+  gsl_eigen_nonsymmv (M, eval, evec, w);
+
+  gsl_eigen_nonsymmv_free (w);
+
+  gsl_eigen_nonsymmv_sort (eval, evec,
+                           GSL_EIGEN_SORT_VAL_DESC);
+
+  gsl_vector_view eval_real = gsl_vector_complex_real(eval);
+  for(int i = 0; i < n-1; i++){
+    double eig1 = gsl_vector_get(&eval_real.vector, i);
+    double eig2 = gsl_vector_get(&eval_real.vector ,i+1);
+    if(eig1 == eig2){
+	printf("There are duplicate eigenvalues");
+	gsl_matrix_free(res);
+	gsl_vector_complex_free(eval);
+	gsl_matrix_complex_free(evec);
+	return NULL;
+      }
+
+  }
+  gsl_matrix* P = gsl_matrix_calloc(n,n);
+  gsl_matrix* D = gsl_matrix_calloc(n,n);
+  for(int i = 0; i < n; i++){
+    gsl_matrix_set(D,i , i,   sqrt(gsl_vector_get(&eval_real.vector, i)));
+    gsl_vector_complex_view evec_i = gsl_matrix_complex_column(evec, i);
+    for(int j =0 ; j< n; j++){
+      gsl_complex gval = gsl_vector_complex_get(&evec_i.vector, j);
+      gsl_matrix_set(P, i,j, GSL_REAL(gval));
+    }
+  }
+
+  gsl_matrix* Pinv = gsl_matrix_alloc(n,n);
+  gsl_matrix_memcpy(Pinv, P);
+
+  gsl_permutation *p2 = gsl_permutation_alloc(n);
+  int s;
+  gsl_linalg_LU_decomp(Pinv, p2, &s);
+  gsl_linalg_LU_invert(Pinv, p2, Pinv);
+
+  gsl_blas_dgemm(CblasNoTrans, CblasNoTrans, 1.0, D, Pinv, 0.0, res);
+  gsl_blas_dgemm(CblasNoTrans, CblasNoTrans, 1.0, P, res, 0.0, res);
+  
+  gsl_permutation_free(p2);
+  gsl_matrix_free(D);
+  gsl_matrix_free(P);
+  gsl_matrix_free(Pinv);
+  gsl_vector_complex_free(eval);
+  gsl_matrix_complex_free(evec);
+
+  return res;
+}
+
 int ellipsoid_fit(double *x ,double *y, double* z, int N){
   double Cmatrix[] = {-1,  1,  1,  0,  0,  0,
                        1, -1,  1,  0,  0,  0,
@@ -103,14 +167,14 @@ int ellipsoid_fit(double *x ,double *y, double* z, int N){
   gsl_matrix_view S22 = gsl_matrix_submatrix(&S.matrix, 6, 6, 4, 4);
   gsl_matrix_view S12 = gsl_matrix_submatrix(&S.matrix, 0, 6, 6, 4);
   gsl_matrix_view S21 = gsl_matrix_submatrix(&S.matrix, 6, 0, 4, 6);
-  printf("Testing S11\n");
-  print_matrix(&S11.matrix, 6, 6);
+  //printf("Testing S11\n");
+  //print_matrix(&S11.matrix, 6, 6);
 
-  printf("texting S22\n");
-  print_matrix(&S22.matrix, 4, 4);
+  //printf("texting S22\n");
+  //print_matrix(&S22.matrix, 4, 4);
 
-  printf("Testing S12\n");
-  print_matrix(&S12.matrix, 6, 4);
+  //printf("Testing S12\n");
+  //print_matrix(&S12.matrix, 6, 4);
   
   int s2;
   gsl_permutation *p = gsl_permutation_alloc(4);
@@ -181,20 +245,36 @@ int ellipsoid_fit(double *x ,double *y, double* z, int N){
 
   gsl_matrix_view M = gsl_matrix_view_array(Marr, 3, 3);
   gsl_vector_view n2 = gsl_vector_view_array(narr, 3);
+
+  gsl_matrix * M2 = gsl_matrix_alloc(3,3);
+  gsl_matrix_memcpy(M2, &M.matrix);
   
   gsl_matrix *invM = gsl_matrix_alloc(3,3);
   int s4;
   gsl_permutation* p3 = gsl_permutation_alloc(3);
-  gsl_linalg_LU_decomp(&M.matrix, p3, &s4);
-  gsl_linalg_LU_invert(&M.matrix, p3, invM);
-
+  gsl_linalg_LU_decomp(M2, p3, &s4);
+  gsl_linalg_LU_invert(M2, p3, invM);
 
   b = gsl_vector_alloc(3);
   gsl_blas_dgemv(CblasNoTrans, -1.0, invM, &n2.vector, 0, b);
 
 
-  A1 = gsl_matrix_alloc(3,3);
   
+  gsl_vector *tempA1 = gsl_vector_alloc(3);
+  gsl_vector_memcpy(tempA1, b);
+  gsl_vector_scale(tempA1, -1);
+
+  double valA1;
+  gsl_blas_ddot(&n2.vector, tempA1, &valA1);
+  valA1 = valA1 - d;
+  valA1 = F/sqrt(valA1);
+
+  A1 = computeSqrtMatrix(&M.matrix, 3);
+  gsl_matrix_scale(A1, valA1);
+
+
+  gsl_vector_free(tempA1);
+  gsl_matrix_free(M2);
   
   gsl_matrix_free(invM);
   gsl_permutation_free(p3);
@@ -219,7 +299,7 @@ int main(){
    */
   signal(SIGINT, handle_sigint);
 
-  
+  /*
   double x[100];
   double y[100];
   double z[100];
@@ -229,9 +309,11 @@ int main(){
     x[i] = (rand()% (upper - lower + 1))+lower;
     y[i] = (rand()% (upper - lower + 1))+lower;
     z[i] = (rand()% (upper - lower + 1))+lower;
-  }
+   }
+   
   ellipsoid_fit(x, y, z, 100);
   return 0;
+  */
   
   /*
     Open up the I2C bus. This will need 
@@ -280,90 +362,61 @@ int main(){
    */
   hmc5983_set_crb(0x40);
 
-  /*
-    Get 10 measurement and print them out
-   */
-  float x_m = 0.0;
-  float y_m = 0.0;
-  float z_m = 0.0;
-  float low_val[3] = {INFINITY, INFINITY, INFINITY};
-  float high_val[3] = {-INFINITY, -INFINITY, -INFINITY};
-
+  
+  double x[CAL_SIZE];
+  double y[CAL_SIZE];
+  double z[CAL_SIZE];
+  
   printf("Randomly rotate the magnetometer around\n");
   printf("to gather data for calibration\n\n");
   
   /*
     Getting the calibration setting
    */
-  for(int i = 0; i < 1000; i++){
+  for(int i = 0; i < CAL_SIZE; i++){
     if(i%100 == 0)
       printf("Gathered %d for calibration\n", i);
-    x_m = hmc5983_get_magnetic_x();
-    y_m = hmc5983_get_magnetic_y();
-    z_m = hmc5983_get_magnetic_z();
+    x[i] = hmc5983_get_magnetic_x();
+    y[i] = hmc5983_get_magnetic_y();
+    z[i] = hmc5983_get_magnetic_z();
     
     //printf("The magnetic field in X is %.2f G\n", x_m);
     //printf("The magnetic field in Y is %.2f G\n", y_m);
     //printf("The magnetic field in Z is %.2f G\n\n", z_m);
 
-    if(low_val[0] > x_m){
-      low_val[0] = x_m;
-    }else if(high_val[0] <= x_m){
-      high_val[0] = x_m;
-    }
-
-    if(low_val[1] > y_m){
-      low_val[1] = y_m;
-    }else if(high_val[1] <= y_m){
-      high_val[1] = y_m;
-    }
-
-    if(low_val[2] > z_m){
-      low_val[2] = z_m;
-    }else if(high_val[2] <= z_m){
-      high_val[2] = z_m;
-    }
-    
     /*
       Sleep for a second before getting next measurement
      */
     usleep(30000);
   }
   
-  // Hard-iron offset 
-  float offset_x = (high_val[0] - low_val[0])/2;
-  float offset_y = (high_val[1] - low_val[1])/2;
-  float offset_z = (high_val[2] - low_val[2])/2;
-
-  // Soft-iron offset
-  float avg_delta_xyz[3] = {(high_val[0] - low_val[0])/2, (high_val[1] - low_val[1])/2, (high_val[2] - low_val[2])/2};
-  float avg_delta = (avg_delta_xyz[0] + avg_delta_xyz[1] + avg_delta_xyz[2])/3;
-
-  float scale_x = avg_delta/ avg_delta_xyz[0];
-  float scale_y = avg_delta/ avg_delta_xyz[1];
-  float scale_z = avg_delta/ avg_delta_xyz[2];
-
-  printf("The x offset is %.2f and x scale is %.2f\n", offset_x, scale_x);
-  printf("The y offset is %.2f and x scale is %.2f\n", offset_y, scale_y);
-  printf("The z offset is %.2f and x scale is %.2f\n\n", offset_z, scale_z);
+  ellipsoid_fit(x,y,z,CAL_SIZE);
   sleep(5);
 
 
+  double x_m;
+  double y_m;
+  double z_m;
+  gsl_vector* data_i = gsl_vector_alloc(3);
   for(int i = 0; i < 30; i++){
     x_m = hmc5983_get_magnetic_x();
     y_m = hmc5983_get_magnetic_y();
     z_m = hmc5983_get_magnetic_z();
 
-    // Calibrating the data
-    x_m = (x_m - offset_x) * scale_x;
-    y_m = (y_m - offset_y) * scale_y;
-    z_m = (z_m - offset_z) * scale_z;
+    gsl_vector_set(data_i, 0, x_m);
+    gsl_vector_set(data_i, 1, y_m);
+    gsl_vector_set(data_i, 2, z_m);
 
-    printf("The magnetic field in X is %.2f G\n", x_m);
-    printf("The magnetic field in Y is %.2f G\n", y_m);
-    printf("The magnetic field in Z is %.2f G\n\n", z_m);
+    gsl_vector_sub(data_i, b);
+    gsl_blas_dgemv(CblasNoTrans, 1.0, A1, data_i, 0.0, data_i);
+
+    printf("The magnetic field in X is %.2f G\n", gsl_vector_get(data_i, 0));
+    printf("The magnetic field in Y is %.2f G\n", gsl_vector_get(data_i, 1));
+    printf("The magnetic field in Z is %.2f G\n\n", gsl_vector_get(data_i, 2));
     sleep(1);
   }
+
+  gsl_vector_free(data_i);
   
   /*
     Disconnect from the I2C bus
