@@ -17,12 +17,12 @@ Interfacing with the magnetometer HMC5983 with Raspberry Pi using I2C.
      * [Getting Measurement Reading](#getting-measurement-reading)
      * [Calibrating HMC5983](#calibrating-hmc5983)
 - [Examples](#example)
-     * [Example 1](#example-1)
-     * [Example 2](#example-2)
-     * [Example 3](#example-3)
-     * [Example 4](#example-4)
-     * [Example 5](#example-5)
-     * [Example 6](#example-6)
+     * [Example 1: Connecting to I2C](#example-1)
+     * [Example 2: Changing Operating Mode](#example-2)
+     * [Example 3: Shows what happens when given invalid value](#example-3)
+     * [Example 4: Self-Test Example](#example-4)
+     * [Example 5: Simple Calibration](#example-5)
+     * [Example 6: Complicated Calibration](#example-6)
 - [Useful Links](#useful-links)
 
 
