@@ -1,6 +1,6 @@
 # HMC5983 with Raspberry Pi
 
-Interfacing with the magnetometer HMC5983 with Raspberry Pi using I2C bus.    
+Interfacing with the magnetometer HMC5983 with Raspberry Pi using I2C.    
 
 ##### Table of Contents
 - [Hardware Setup](#hardware-setup)
@@ -22,6 +22,7 @@ Interfacing with the magnetometer HMC5983 with Raspberry Pi using I2C bus.
      * [Example 3](#example-3)
      * [Example 4](#example-4)
      * [Example 5](#example-5)
+     * [Example 6](#example-6)
 - [Useful Links](#useful-links)
 
 
@@ -337,11 +338,27 @@ make example4.exe
 
 ### Example 5
 
-Going to demonstrate the easy calibration method
+A simple method to calibrate the magnetometer, which takes the average of the dataset and adjust it accordingly. To run the example, run the following command in the terminal:
+
+```
+make example5.exe
+./example5.exe
+```
+
+[Back to Table of Contents](#table-of-contents)
 
 ### Example 6
 
-Going to implement the more sophisticated calibration method
+A more sophisticated calibration method. This example use's GSL (GNU Scientific Library) to do some of the comuptation, and does use dynamic memory. You will need to install GSL onto the device in order to run the program. To run the example, run the following command in the terminal:
+
+```
+make example6.exe
+./example6.exe
+```
+
+This function in this example is not included in HMC5983.c file. It is still in developing stage and need to be verified and validated. 
+
+[Back to Table of Contents](#table-of-contents)
 
 ## Useful Links
 

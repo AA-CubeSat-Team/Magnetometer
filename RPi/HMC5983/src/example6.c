@@ -10,12 +10,17 @@
   magnetometer using the sophisticated method.
  */
 
-#define CAL_SIZE 1000
+#define CAL_SIZE 1000    // THe number of data points we record for calibration
+#define MEAS_SIZE  500   // THe number of data points we record after calibration
 
 gsl_matrix *A1;
 gsl_vector *b;
 double F = 1.0;   // Default is 1. 
 
+/**
+   The deconstructor of the program. We always want to ensure that
+   the dynamically stored pointers of A1 and b is freed. 
+ **/
 void __attribute__ ((destructor))  dtor() {
   printf("Running deconstructor\n");
 
@@ -46,6 +51,14 @@ void handle_sigint(int sig){
   exit(0);
 }
 
+/**
+   Write the X,Y,Z data into a CSV file
+   Parameters:: filename: the file's name
+                x: Array containing the x's data
+		y: Array containing the y's data
+		z: Array containing the z's data
+		length: The length of an arrays 
+ **/
 int write_csv_file(char const *fileName, double* x, double* y, double* z, int length){
   FILE *f = fopen(fileName, "w");
   if (f == NULL) return -1;
@@ -55,6 +68,11 @@ int write_csv_file(char const *fileName, double* x, double* y, double* z, int le
   fclose(f);
 }
 
+/**
+   Print the data in gsl_vector
+   Parameters:: ve: Pointer to vector data
+                n: The length of the vector
+ **/
 void print_vector(gsl_vector *ve, int n){
   for(int i = 0; i < n; i++){
     double val = gsl_vector_get(ve, i);
@@ -63,7 +81,13 @@ void print_vector(gsl_vector *ve, int n){
   printf("\n");
 }
 
-int print_matrix(gsl_matrix * ma, int m, int n){
+/**
+   Print the data in gsl_matrix
+   Parameters:: ma: The data of the matrix
+                m: The # of columns in the matrix
+		n: THe # of rows in the matrix
+ **/
+void print_matrix(gsl_matrix * ma, int m, int n){
   for(int i = 0; i < m; i++){
     for(int j = 0; j < n; j++){
       double val = gsl_matrix_get(ma, i, j);
@@ -76,9 +100,15 @@ int print_matrix(gsl_matrix * ma, int m, int n){
 }
 
 
+/**
+   Compute the square root of a square matrix
+   Parameters:: M: The matrix
+               n: The dimension of the matrix
+ **/
 gsl_matrix* computeSqrtMatrix(gsl_matrix * M, int n){
   gsl_matrix* res = gsl_matrix_calloc(n,n);
-  
+
+  // Compute the eigenvalue and eigenvectors of the matrix
   gsl_vector_complex *eval = gsl_vector_complex_alloc (n);
   gsl_matrix_complex *evec = gsl_matrix_complex_alloc (n, n);
 
@@ -92,6 +122,9 @@ gsl_matrix* computeSqrtMatrix(gsl_matrix * M, int n){
   gsl_eigen_nonsymmv_sort (eval, evec,
                            GSL_EIGEN_SORT_VAL_DESC);
 
+  // See if there's any duplicate eigenvalues. If so, then
+  // we need to use some other method to compute the square root
+  // of a matrix
   gsl_vector_view eval_real = gsl_vector_complex_real(eval);
   for(int i = 0; i < n-1; i++){
     double eig1 = gsl_vector_get(&eval_real.vector, i);
@@ -105,6 +138,12 @@ gsl_matrix* computeSqrtMatrix(gsl_matrix * M, int n){
       }
 
   }
+
+  // Compute M = P D P^-1 where D is a diagonal matrix with
+  // eigenvalues, and P is the matrix containing the eigenvectors.
+  // We are also square rooting the eigenvalue such that we can get
+  // the square root of the matrix M. 
+  // Is P and evec the same matrix?
   gsl_matrix* P = gsl_matrix_calloc(n,n);
   gsl_matrix* D = gsl_matrix_calloc(n,n);
   for(int i = 0; i < n; i++){
@@ -121,11 +160,11 @@ gsl_matrix* computeSqrtMatrix(gsl_matrix * M, int n){
 
   printf("Printing P matrix\n");
   print_matrix(P, n, n);
-  
+
+  // Get the matrix inversion of P
   gsl_matrix* Pinv = gsl_matrix_alloc(n,n);
   gsl_matrix* Pinv_pre = gsl_matrix_alloc(n,n);
   gsl_matrix_memcpy(Pinv_pre, P);
-
   gsl_permutation *p2 = gsl_permutation_alloc(n);
   int s;
   gsl_linalg_LU_decomp(Pinv_pre, p2, &s);
@@ -137,11 +176,13 @@ gsl_matrix* computeSqrtMatrix(gsl_matrix * M, int n){
   gsl_matrix_free(Pinv_pre);
 
   gsl_matrix* res_pre = gsl_matrix_alloc(n,n);
-  
+
+  // Compute the square root of the matrix M
   gsl_blas_dgemm(CblasNoTrans, CblasNoTrans, 1.0, D, Pinv, 0.0, res_pre);
   gsl_blas_dgemm(CblasNoTrans, CblasNoTrans, 1.0, P, res_pre, 0.0, res);
 
-
+  
+  // Free the allocated memory 
   gsl_matrix_free(res_pre);
   gsl_permutation_free(p2);
   gsl_matrix_free(D);
@@ -156,6 +197,12 @@ gsl_matrix* computeSqrtMatrix(gsl_matrix * M, int n){
   return res;
 }
 
+
+// Ellipsoid fit method
+// Parameters:: x: the array of x data
+//              y: The array of y data
+//              z: The array of z data
+//              N; The length of the array
 int ellipsoid_fit(double *x ,double *y, double* z, int N){
   double Cmatrix[] = {-1,  1,  1,  0,  0,  0,
                        1, -1,  1,  0,  0,  0,
@@ -170,9 +217,16 @@ int ellipsoid_fit(double *x ,double *y, double* z, int N){
   
   gsl_matrix * D = gsl_matrix_calloc(10, N);
   gsl_matrix_view S = gsl_matrix_view_array(tempS, 10, 10);
-
+  double max_x = -INFINITY;
+  double min_x = INFINITY;
   for(int i = 0 ; i < N; i++){
-    printf("%.2f, %.2f, %.2f\n", x[i], y[i], z[i]);
+    //printf("%.2f, %.2f, %.2f\n", x[i], y[i], z[i]);
+    if(x[i] > max_x){
+      max_x = x[i];
+    }
+    if(x[i] < min_x){
+      min_x = x[i];
+    }
     gsl_matrix_set(D, 0, i, gsl_pow_2(x[i]));
     gsl_matrix_set(D, 1, i, gsl_pow_2(y[i]));
     gsl_matrix_set(D, 2, i, gsl_pow_2(z[i]));
@@ -186,7 +240,7 @@ int ellipsoid_fit(double *x ,double *y, double* z, int N){
     gsl_matrix_set(D, 8, i, 2*z[i]);
     gsl_matrix_set(D, 9, i, 1);
   }
-
+  F = (max_x - min_x)/2.0;
   printf("Here\n");
   gsl_blas_dgemm(CblasNoTrans, CblasTrans, 1.0, D, D, 0.0, &S.matrix);
   print_matrix(&S.matrix, 10, 10);
@@ -333,22 +387,6 @@ int main(){
     Catch SIGINT 
    */
   signal(SIGINT, handle_sigint);
-
-  /*
-  double x[100];
-  double y[100];
-  double z[100];
-  int upper = 10;
-  int lower = -10;
-  for(int i = 0; i < 100; i++){
-    x[i] = (rand()% (upper - lower + 1))+lower;
-    y[i] = (rand()% (upper - lower + 1))+lower;
-    z[i] = (rand()% (upper - lower + 1))+lower;
-   }
-   
-  ellipsoid_fit(x, y, z, 100);
-  return 0;
-  */
   
   /*
     Open up the I2C bus. This will need 
@@ -411,19 +449,19 @@ int main(){
   for(int i = 0; i < CAL_SIZE; i++){
     if(i%100 == 0)
       printf("Gathered %d dataset for calibration\n", i);
-    x[i] = hmc5983_get_magnetic_x();
-    y[i] = hmc5983_get_magnetic_y();
-    z[i] = hmc5983_get_magnetic_z();
+    x[i] = hmc5983_get_raw_magnetic_x(1);
+    y[i] = hmc5983_get_raw_magnetic_y(1);
+    z[i] = hmc5983_get_raw_magnetic_z(1);
 
     while(isnan(x[i]) || isnan(y[i]) || isnan(z[i])){
-      x[i] = hmc5983_get_magnetic_x();
-      y[i] = hmc5983_get_magnetic_y();
-      z[i] = hmc5983_get_magnetic_z();
+      x[i] = hmc5983_get_raw_magnetic_x(1);
+      y[i] = hmc5983_get_raw_magnetic_y(1);
+      z[i] = hmc5983_get_raw_magnetic_z(1);
     }
     
-    printf("The magnetic field in X is %.2f G\n", x[i]);
-    printf("The magnetic field in Y is %.2f G\n", y[i]);
-    printf("The magnetic field in Z is %.2f G\n\n", z[i]);
+    //printf("The magnetic field in X is %.2f G\n", x[i]);
+    //printf("The magnetic field in Y is %.2f G\n", y[i]);
+    //printf("The magnetic field in Z is %.2f G\n\n", z[i]);
     
     /*
       Sleep for a second before getting next measurement
@@ -435,12 +473,26 @@ int main(){
   sleep(2);
 
 
-  double x2[CAL_SIZE];
-  double y2[CAL_SIZE];
-  double z2[CAL_SIZE];
+  // Get a new batch of dataset and 
+  double x2[MEAS_SIZE];
+  double y2[MEAS_SIZE];
+  double z2[MEAS_SIZE];
   gsl_vector *data_i = gsl_vector_alloc(3);
   gsl_vector* data_cal_i = gsl_vector_alloc(3);
-  for(int i = 0; i < CAL_SIZE; i++){
+  for(int i = 0; i < MEAS_SIZE; i++){
+    if(i%100 == 0){
+      printf("Gathered %d measurements\n", i);
+    }
+    x[i] = hmc5983_get_raw_magnetic_x(1);
+    y[i] = hmc5983_get_raw_magnetic_y(1);
+    z[i] = hmc5983_get_raw_magnetic_z(1);
+
+    while(isnan(x[i]) || isnan(y[i]) || isnan(z[i])){
+      x[i] = hmc5983_get_raw_magnetic_x(1);
+      y[i] = hmc5983_get_raw_magnetic_y(1);
+      z[i] = hmc5983_get_raw_magnetic_z(1);
+    }
+    
     gsl_vector_set(data_i, 0, x[i]);
     gsl_vector_set(data_i, 1, y[i]);
     gsl_vector_set(data_i, 2, z[i]);
@@ -453,9 +505,9 @@ int main(){
     y2[i] = gsl_vector_get(data_cal_i, 1);
     z2[i] = gsl_vector_get(data_cal_i, 2);
     
-    printf("The magnetic field in X before calibration is %.2f and after is %.2f G\n", x[i],  x2[i]);
-    printf("The magnetic field in Y before calibration is %.2f and after is %.2f G\n", y[i],  y2[i]);
-    printf("The magnetic field in Z before calibration is %.2f and after is %.2f G\n\n", z[i],  z2[i]);
+    //printf("The magnetic field in X before calibration is %.2f and after is %.2f G\n", x[i],  x2[i]);
+    //printf("The magnetic field in Y before calibration is %.2f and after is %.2f G\n", y[i],  y2[i]);
+    //printf("The magnetic field in Z before calibration is %.2f and after is %.2f G\n\n", z[i],  z2[i]);
     usleep(30000);
   }
 
@@ -463,7 +515,7 @@ int main(){
   gsl_vector_free(data_cal_i);
 
   write_csv_file("data/uncalibrated.csv", x, y, z, CAL_SIZE);
-  write_csv_file("data/calibrated.csv", x2, y2, z2, CAL_SIZE);
+  write_csv_file("data/calibrated.csv", x2, y2, z2, MEAS_SIZE);
   
   /*
     Disconnect from the I2C bus
