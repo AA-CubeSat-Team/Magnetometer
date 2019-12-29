@@ -1,5 +1,5 @@
-#include "../Lib/I2Cdrive.h"
-#include "../Lib/commonLib.h"
+#include "../lib/I2Cdrive.h"
+#include "../lib/commonLib.h"
 #include "HMC5983.h"
 
 /*

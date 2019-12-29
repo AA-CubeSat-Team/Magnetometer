@@ -1,6 +1,6 @@
 #include "HMC5983.h"
-#include "../Lib/I2Cdrive.h"
-#include "../Lib/commonLib.h"
+#include "../lib/I2Cdrive.h"
+#include "../lib/commonLib.h"
 
 //const char* csv_filename = "aerb_cal.csv";
 //const char* csv_filename = "cal_val.csv";
@@ -331,7 +331,7 @@ void hmc5983_calibrate(){
   float x_m =0.0;
   float y_m = 0.0;
   float z_m = 0.0;
-  float temper = 0.0;
+  //float temper = 0.0;
   int i = 0;
   while(i < 1000){
     if(i%100 == 0)
@@ -386,7 +386,7 @@ void hmc5983_calibrate(){
   printf("The magnetic offset are %.3f %.3f %.3f\n", mag_offset.x, mag_offset.y , mag_offset.z);
 
   FILE *fp;
-  char buff[255];
+  //char buff[255];
   fp = fopen(csv_filename, "w");
 
   fprintf(fp, "%f", mag_offset.x);

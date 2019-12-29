@@ -1,5 +1,5 @@
-#include "../Lib/I2Cdrive.h"
-#include "../Lib/commonLib.h"
+#include "../lib/I2Cdrive.h"
+#include "../lib/commonLib.h"
 #include "HMC5983.h"
 #include <gsl/gsl_matrix.h>
 #include <gsl/gsl_linalg.h>
@@ -10,8 +10,8 @@
   magnetometer using the sophisticated method.
  */
 
-#define CAL_SIZE 1000    // THe number of data points we record for calibration
-#define MEAS_SIZE  500   // THe number of data points we record after calibration
+#define CAL_SIZE 2000    // THe number of data points we record for calibration
+#define MEAS_SIZE  1000   // THe number of data points we record after calibration
 
 gsl_matrix *A1;
 gsl_vector *b;
@@ -66,6 +66,7 @@ int write_csv_file(char const *fileName, double* x, double* y, double* z, int le
     fprintf(f, "%f,%f,%f\n", x[i], y[i], z[i]);
   }
   fclose(f);
+  return 0;
 }
 
 /**
@@ -77,6 +78,14 @@ void print_vector(gsl_vector *ve, int n){
   for(int i = 0; i < n; i++){
     double val = gsl_vector_get(ve, i);
     printf("%.2f, ", val);
+  }
+  printf("\n");
+}
+
+void print_vector_complex(gsl_vector_complex *ve, int n ){
+  for(int i = 0; i < n; i++){
+    gsl_complex val = gsl_vector_complex_get(ve, i);
+    printf("%.5f + %.5f i \n",GSL_REAL(val), GSL_IMAG(val));
   }
   printf("\n");
 }
@@ -99,6 +108,18 @@ void print_matrix(gsl_matrix * ma, int m, int n){
   printf("\n");
 }
 
+void print_matrix_complex(gsl_matrix_complex *ma, int m, int n){
+ for(int i = 0; i < m; i++){
+    for(int j = 0; j < n; j++){
+      gsl_complex val = gsl_matrix_complex_get(ma, i, j);
+      printf("%.5f+%.5f i, ", GSL_REAL(val), GSL_IMAG(val));
+      
+    }
+    printf("\n");
+  }
+  printf("\n");
+}
+
 
 /**
    Compute the square root of a square matrix
@@ -106,8 +127,11 @@ void print_matrix(gsl_matrix * ma, int m, int n){
                n: The dimension of the matrix
  **/
 gsl_matrix* computeSqrtMatrix(gsl_matrix * M, int n){
+  gsl_matrix* Mcpy = gsl_matrix_calloc(n,n);
   gsl_matrix* res = gsl_matrix_calloc(n,n);
 
+  gsl_matrix_memcpy(Mcpy, M);
+  
   // Compute the eigenvalue and eigenvectors of the matrix
   gsl_vector_complex *eval = gsl_vector_complex_alloc (n);
   gsl_matrix_complex *evec = gsl_matrix_complex_alloc (n, n);
@@ -115,7 +139,7 @@ gsl_matrix* computeSqrtMatrix(gsl_matrix * M, int n){
   gsl_eigen_nonsymmv_workspace * w =
     gsl_eigen_nonsymmv_alloc (n);
 
-  gsl_eigen_nonsymmv (M, eval, evec, w);
+  gsl_eigen_nonsymmv (Mcpy, eval, evec, w);
 
   gsl_eigen_nonsymmv_free (w);
 
@@ -151,15 +175,15 @@ gsl_matrix* computeSqrtMatrix(gsl_matrix * M, int n){
     gsl_vector_complex_view evec_i = gsl_matrix_complex_column(evec, i);
     for(int j =0 ; j< n; j++){
       gsl_complex gval = gsl_vector_complex_get(&evec_i.vector, j);
-      gsl_matrix_set(P, i,j, GSL_REAL(gval));
+      gsl_matrix_set(P, j,i, GSL_REAL(gval));
     }
   }
 
-  printf("Printing D matrix\n");
-  print_matrix(D, n, n);
+  //printf("Printing Square root of D matrix\n");
+  //print_matrix(D, n, n);
 
-  printf("Printing P matrix\n");
-  print_matrix(P, n, n);
+  //printf("Printing P matrix\n");
+  //print_matrix(P, n, n);
 
   // Get the matrix inversion of P
   gsl_matrix* Pinv = gsl_matrix_alloc(n,n);
@@ -170,8 +194,8 @@ gsl_matrix* computeSqrtMatrix(gsl_matrix * M, int n){
   gsl_linalg_LU_decomp(Pinv_pre, p2, &s);
   gsl_linalg_LU_invert(Pinv_pre, p2, Pinv);
 
-  printf("Printinf Pinv\n");
-  print_matrix(Pinv, n, n);
+  //printf("Printinf Pinv\n");
+  //print_matrix(Pinv, n, n);
 
   gsl_matrix_free(Pinv_pre);
 
@@ -182,7 +206,8 @@ gsl_matrix* computeSqrtMatrix(gsl_matrix * M, int n){
   gsl_blas_dgemm(CblasNoTrans, CblasNoTrans, 1.0, P, res_pre, 0.0, res);
 
   
-  // Free the allocated memory 
+  // Free the allocated memory
+  gsl_matrix_free(Mcpy);
   gsl_matrix_free(res_pre);
   gsl_permutation_free(p2);
   gsl_matrix_free(D);
@@ -190,9 +215,6 @@ gsl_matrix* computeSqrtMatrix(gsl_matrix * M, int n){
   gsl_matrix_free(Pinv);
   gsl_vector_complex_free(eval);
   gsl_matrix_complex_free(evec);
-
-  printf("Printing res\n");
-  print_matrix(res, n,n );
 
   return res;
 }
@@ -203,15 +225,15 @@ gsl_matrix* computeSqrtMatrix(gsl_matrix * M, int n){
 //              y: The array of y data
 //              z: The array of z data
 //              N; The length of the array
-int ellipsoid_fit(double *x ,double *y, double* z, int N){
-  double Cmatrix[] = {-1,  1,  1,  0,  0,  0,
-                       1, -1,  1,  0,  0,  0,
-                       1,  1, -1,  0,  0,  0,
-                       0,  0,  0, -4,  0,  0,
-                       0,  0,  0,  0, -4,  0,
-                       0,  0,  0,  0,  0, -4};
+void ellipsoid_fit(double *x ,double *y, double* z, int N, double k){
+  double Cmatrix[] = {-1,  k/2.0-1,  k/2.0-1,  0,  0,  0,
+                       k/2.0-1, -1,  k/2.0-1,  0,  0,  0,
+                       k/2.0-1,  k/2.0-1, -1,  0,  0,  0,
+                       0,  0,  0, -k,  0,  0,
+                       0,  0,  0,  0, -k,  0,
+                       0,  0,  0,  0,  0, -k};
   // A matrix view is a temporary matrix stored on stack
-  gsl_matrix_view Cinv = gsl_matrix_view_array (Cmatrix,6, 6);
+  gsl_matrix_view C = gsl_matrix_view_array (Cmatrix,6, 6);
   
   double tempS[100] = {0};
   
@@ -241,9 +263,9 @@ int ellipsoid_fit(double *x ,double *y, double* z, int N){
     gsl_matrix_set(D, 9, i, 1);
   }
   F = (max_x - min_x)/2.0;
-  printf("Here\n");
+  //printf("Here\n");
   gsl_blas_dgemm(CblasNoTrans, CblasTrans, 1.0, D, D, 0.0, &S.matrix);
-  print_matrix(&S.matrix, 10, 10);
+  //print_matrix(&S.matrix, 10, 10);
 
   gsl_matrix_free(D);
   
@@ -251,28 +273,28 @@ int ellipsoid_fit(double *x ,double *y, double* z, int N){
   gsl_matrix_view S22 = gsl_matrix_submatrix(&S.matrix, 6, 6, 4, 4);
   gsl_matrix_view S12 = gsl_matrix_submatrix(&S.matrix, 0, 6, 6, 4);
   gsl_matrix_view S21 = gsl_matrix_submatrix(&S.matrix, 6, 0, 4, 6);
-  printf("Testing S11\n");
-  print_matrix(&S11.matrix, 6, 6);
+  //printf("Testing S11\n");
+  //print_matrix(&S11.matrix, 6, 6);
 
-  printf("texting S22\n");
-  print_matrix(&S22.matrix, 4, 4);
+  //printf("texting S22\n");
+  //print_matrix(&S22.matrix, 4, 4);
 
-  printf("Testing S12\n");
-  print_matrix(&S12.matrix, 6, 4);
+  //printf("Testing S12\n");
+  //print_matrix(&S12.matrix, 6, 4);
   
   int s2;
   gsl_permutation *p = gsl_permutation_alloc(4);
   gsl_linalg_LU_decomp(&S22.matrix, p, &s2);
   //print_matrix(&m.matrix, 6,6);
 
-  gsl_matrix * invm = gsl_matrix_alloc(4,4);
-  gsl_linalg_LU_invert(&S22.matrix, p, invm);
+  gsl_matrix * invS22 = gsl_matrix_alloc(4,4);
+  gsl_linalg_LU_invert(&S22.matrix, p, invS22);
   //print_matrix(invm, 6,6);
 
   gsl_permutation_free(p);
   
   gsl_matrix * tempE = gsl_matrix_alloc(4, 6);
-  gsl_blas_dgemm(CblasNoTrans, CblasNoTrans, 1.0, invm, &S21.matrix, 0.0, tempE);
+  gsl_blas_dgemm(CblasNoTrans, CblasNoTrans, 1.0, invS22, &S21.matrix, 0.0, tempE);
   gsl_matrix * tempE2 = gsl_matrix_alloc(6,6);
   gsl_blas_dgemm(CblasNoTrans, CblasNoTrans, 1.0, &S12.matrix, tempE, 0.0, tempE2);
 
@@ -280,30 +302,35 @@ int ellipsoid_fit(double *x ,double *y, double* z, int N){
   gsl_matrix_memcpy( tempE3 , &S11.matrix);
   gsl_matrix_sub(tempE3, tempE2);
 
-  gsl_matrix *invm2 = gsl_matrix_alloc(6,6);
+  gsl_matrix *invC = gsl_matrix_alloc(6,6);
   int s3;
   gsl_permutation* p2 = gsl_permutation_alloc(6);
-  gsl_linalg_LU_decomp(&Cinv.matrix, p2, &s3);
-  gsl_linalg_LU_invert(&Cinv.matrix, p2, invm2);
+  gsl_linalg_LU_decomp(&C.matrix, p2, &s3);
+  gsl_linalg_LU_invert(&C.matrix, p2, invC);
 
   gsl_permutation_free(p2);
   
 
   gsl_matrix *E = gsl_matrix_alloc(6,6);
-  gsl_blas_dgemm(CblasNoTrans, CblasNoTrans, 1.0, invm2, tempE3, 0.0, E);
+  gsl_blas_dgemm(CblasNoTrans, CblasNoTrans, 1.0, invC, tempE3, 0.0, E);
 
   gsl_vector_complex *eval = gsl_vector_complex_alloc(6);
   gsl_matrix_complex *evec = gsl_matrix_complex_alloc (6, 6);
 
   gsl_eigen_nonsymmv_workspace * w = gsl_eigen_nonsymmv_alloc (6);
 
-  gsl_eigen_nonsymmv (E, eval, evec, w);
+  gsl_matrix* Ecpy = gsl_matrix_alloc(6,6);
+  gsl_matrix_memcpy(Ecpy, E);
+  
+  gsl_eigen_nonsymmv (Ecpy, eval, evec, w);
 
   gsl_eigen_nonsymmv_free (w);
 
   gsl_eigen_nonsymmv_sort (eval, evec,
                            GSL_EIGEN_SORT_VAL_DESC);
 
+  gsl_matrix_free(Ecpy);
+  
   gsl_vector_complex_view v1_pre
     = gsl_matrix_complex_column (evec, 0);
   gsl_vector_view v1 =  gsl_vector_complex_real(&v1_pre.vector);
@@ -311,7 +338,7 @@ int ellipsoid_fit(double *x ,double *y, double* z, int N){
     gsl_vector_scale(&v1.vector, -1);
   }
 
-  printf("here\n");
+  //printf("here\n");
   double temp[4]={0};
   gsl_vector_view v2 = gsl_vector_view_array(temp, 4);
   gsl_blas_dgemv(CblasNoTrans, -1.0, tempE, &v1.vector, 0, &v2.vector);
@@ -329,7 +356,9 @@ int ellipsoid_fit(double *x ,double *y, double* z, int N){
   double v22 = gsl_vector_get(&v2.vector, 2);
   double d = gsl_vector_get(&v2.vector, 3);
   
-  double Marr[9] = {v10, v13, v14, v13, v11, v15, v14, v15, v12};
+  double Marr[9] = {v10, v15, v14,
+		    v15, v11, v13,
+		    v14, v13, v12};
   double narr[3] = {v20, v21, v22};
 
   gsl_matrix_view M = gsl_matrix_view_array(Marr, 3, 3);
@@ -344,12 +373,12 @@ int ellipsoid_fit(double *x ,double *y, double* z, int N){
   gsl_linalg_LU_decomp(M2, p3, &s4);
   gsl_linalg_LU_invert(M2, p3, invM);
 
+  gsl_permutation_free(p3);
+  gsl_matrix_free(M2);
+
   b = gsl_vector_alloc(3);
   gsl_blas_dgemv(CblasNoTrans, -1.0, invM, &n2.vector, 0, b);
 
-  printf("Printinf b\n");
-  print_vector(b, 3);
-  
   gsl_vector *tempA1 = gsl_vector_alloc(3);
   gsl_vector_memcpy(tempA1, b);
   gsl_vector_scale(tempA1, -1);
@@ -362,27 +391,48 @@ int ellipsoid_fit(double *x ,double *y, double* z, int N){
   A1 = computeSqrtMatrix(&M.matrix, 3);
   gsl_matrix_scale(A1, valA1);
 
-  printf("Testing A1\n");
-  print_matrix(A1, 3, 3);
+  printf("Printing A:\n");
+  print_matrix(A1, 3, 3 );
 
+  printf("Printing b:\n");
+  print_vector(b, 3);
+  
+
+ 
   gsl_vector_free(tempA1);
-  gsl_matrix_free(M2);
   
   gsl_matrix_free(invM);
-  gsl_permutation_free(p3);
   
   gsl_vector_complex_free(eval);
   gsl_matrix_complex_free(evec);
   
-  gsl_matrix_free(invm);
+  gsl_matrix_free(invS22);
   gsl_matrix_free(tempE);
   gsl_matrix_free(tempE2);
   gsl_matrix_free(tempE3);
-  gsl_matrix_free(invm2);
+  gsl_matrix_free(invC);
   gsl_matrix_free(E);
 }
 
+void testSquareMatrix(){
+  double arr[] = {33,24,48,57};
+  gsl_matrix_view test2 = gsl_matrix_view_array(arr,2,2);
+  print_matrix(&test2.matrix, 2,2);
+
+  gsl_matrix* test3 = computeSqrtMatrix(&test2.matrix, 2);
+  printf("The result of squar root:\n");
+  print_matrix(test3, 2, 2);
+  gsl_matrix_free(test3);
+}
+
+void runTest(){
+  testSquareMatrix();
+}
+
 int main(){
+
+  //runTest();
+  //return 0;
   /*
     Catch SIGINT 
    */
@@ -469,29 +519,33 @@ int main(){
     usleep(30000);
   }
   
-  ellipsoid_fit(x,y,z,CAL_SIZE);
+  ellipsoid_fit(x,y,z,CAL_SIZE, 5);
   sleep(2);
 
 
   // Get a new batch of dataset and 
-  double x2[MEAS_SIZE];
-  double y2[MEAS_SIZE];
-  double z2[MEAS_SIZE];
+  double x2[CAL_SIZE];
+  double y2[CAL_SIZE];
+  double z2[CAL_SIZE];
+  
+  //double x3[MEAS_SIZE];
+  //double y3[MEAS_SIZE];
+  //double z3[MEAS_SIZE];
   gsl_vector *data_i = gsl_vector_alloc(3);
   gsl_vector* data_cal_i = gsl_vector_alloc(3);
-  for(int i = 0; i < MEAS_SIZE; i++){
+  for(int i = 0; i < CAL_SIZE; i++){
     if(i%100 == 0){
-      printf("Gathered %d measurements\n", i);
+      printf("Calibrated %d data\n", i);
     }
-    x[i] = hmc5983_get_raw_magnetic_x(1);
-    y[i] = hmc5983_get_raw_magnetic_y(1);
-    z[i] = hmc5983_get_raw_magnetic_z(1);
+    //x2[i] = hmc5983_get_raw_magnetic_x(1);
+    //y2[i] = hmc5983_get_raw_magnetic_y(1);
+    //z2[i] = hmc5983_get_raw_magnetic_z(1);
 
-    while(isnan(x[i]) || isnan(y[i]) || isnan(z[i])){
-      x[i] = hmc5983_get_raw_magnetic_x(1);
-      y[i] = hmc5983_get_raw_magnetic_y(1);
-      z[i] = hmc5983_get_raw_magnetic_z(1);
-    }
+    //while(isnan(x2[i]) || isnan(y2[i]) || isnan(z2[i])){
+    //  x2[i] = hmc5983_get_raw_magnetic_x(1);
+    //  y2[i] = hmc5983_get_raw_magnetic_y(1);
+    //  z2[i] = hmc5983_get_raw_magnetic_z(1);
+    //}
     
     gsl_vector_set(data_i, 0, x[i]);
     gsl_vector_set(data_i, 1, y[i]);
@@ -515,7 +569,7 @@ int main(){
   gsl_vector_free(data_cal_i);
 
   write_csv_file("data/uncalibrated.csv", x, y, z, CAL_SIZE);
-  write_csv_file("data/calibrated.csv", x2, y2, z2, MEAS_SIZE);
+  write_csv_file("data/calibrated.csv", x2, y2, z2, CAL_SIZE);
   
   /*
     Disconnect from the I2C bus
