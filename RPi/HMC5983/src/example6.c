@@ -13,6 +13,8 @@
 #define CAL_SIZE 2000    // THe number of data points we record for calibration
 #define MEAS_SIZE  1000   // THe number of data points we record after calibration
 
+#define INCLUDE_BIAS 1
+
 gsl_matrix *A1;
 gsl_vector *b;
 double F = 1.0;   // Default is 1. 
@@ -508,6 +510,12 @@ int main(){
       y[i] = hmc5983_get_raw_magnetic_y(1);
       z[i] = hmc5983_get_raw_magnetic_z(1);
     }
+
+    if(INCLUDE_BIAS){
+      x[i] = x[i]*1.2 + .3;
+      y[i] = y[i]*1.5 + .2;
+      z[i] = z[i]*.8 + .4;
+    }
     
     //printf("The magnetic field in X is %.2f G\n", x[i]);
     //printf("The magnetic field in Y is %.2f G\n", y[i]);
@@ -562,7 +570,8 @@ int main(){
     //printf("The magnetic field in X before calibration is %.2f and after is %.2f G\n", x[i],  x2[i]);
     //printf("The magnetic field in Y before calibration is %.2f and after is %.2f G\n", y[i],  y2[i]);
     //printf("The magnetic field in Z before calibration is %.2f and after is %.2f G\n\n", z[i],  z2[i]);
-    usleep(30000);
+    
+    //usleep(30000);
   }
 
   gsl_vector_free(data_i);
