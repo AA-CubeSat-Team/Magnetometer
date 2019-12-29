@@ -360,7 +360,7 @@ This function in this example is not included in HMC5983.c file. It is still in 
 
 A sample of what an ideal calibration will have an affect on the data is shown in figure below
 
-![calibration image](https://github.com/hima1234/AACT_magnetometer/blob/master/RPi/HMC5983/image/ellipsoid2sphere.png)
+![calibration image](https://github.com/AA-CubeSat-Team/Magnetometer/blob/master/RPi/HMC5983/image/ellipsoid2sphere.png)
 
 [Back to Table of Contents](#table-of-contents)
 
