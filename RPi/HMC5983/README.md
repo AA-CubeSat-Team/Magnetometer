@@ -358,7 +358,7 @@ make example6.exe
 
 This function in this example is not included in HMC5983.c file. It is still in developing stage and need to be verified and validated. 
 
-A sample of what an ideal calibration will have an affect on the data is shown in figure below
+A sample of what an ideal calibration will look like on a dataset that have some soft-iron and hard-iron biases.
 
 ![calibration image](https://github.com/AA-CubeSat-Team/Magnetometer/blob/master/RPi/HMC5983/image/ellipsoid2sphere.png)
 

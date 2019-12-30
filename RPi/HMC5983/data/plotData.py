@@ -50,8 +50,8 @@ fig = plt.figure()
 ax = fig.gca(projection='3d')
 
 
-ax.scatter(xuncal_list, yuncal_list, zuncal_list, label='Uncal')
-ax.scatter(xcal_list, ycal_list, zcal_list, label='Cal')
+ax.scatter(xuncal_list, yuncal_list, zuncal_list, label='Uncalibrated')
+ax.scatter(xcal_list, ycal_list, zcal_list, label='Calibrated')
 ax.set(xlabel='X mag', ylabel='Y mag', zlabel='Z mag')
 ax.legend()
 ax.set_aspect('equal')
@@ -71,21 +71,21 @@ ax2 = fig2.add_subplot(222);
 ax3 = fig2.add_subplot(223);
 
 
-ax1.scatter(xuncal_list, yuncal_list,label='Uncal')
-ax1.scatter(xcal_list, ycal_list,label='Cal')
+ax1.scatter(xuncal_list, yuncal_list,label='Uncalibrated')
+ax1.scatter(xcal_list, ycal_list,label='Calibrated')
 ax1.set(xlabel='X', ylabel='Y')
 ax1.legend()
 ax1.axis('equal')
 
 
-ax2.scatter(zuncal_list, yuncal_list, label='Uncal');
-ax2.scatter(zcal_list, ycal_list, label='Cal');
+ax2.scatter(zuncal_list, yuncal_list, label='Uncalibrated');
+ax2.scatter(zcal_list, ycal_list, label='Calibrated');
 ax2.set(xlabel='Z', ylabel='Y')
 ax2.legend()
 ax2.axis('equal')
 
-ax3.scatter(xuncal_list, zuncal_list, label='Uncal');
-ax3.scatter(xcal_list, zcal_list, label='Cal');
+ax3.scatter(xuncal_list, zuncal_list, label='Uncalibrated');
+ax3.scatter(xcal_list, zcal_list, label='Calibrated');
 ax3.set(xlabel='X', ylabel='Z')
 ax3.legend()
 ax3.axis('equal')
