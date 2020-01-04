@@ -14,7 +14,7 @@
 #define CAL_SIZE 2000    // THe number of data points we record for calibration
 #define MEAS_SIZE  1000   // THe number of data points we record after calibration
 
-#define INCLUDE_BIAS 1   // Add more bias to see the effect of calibration
+#define INCLUDE_BIAS 0   // Add more bias to see the effect of calibration
 
 gsl_matrix *A1;
 gsl_vector *b;
