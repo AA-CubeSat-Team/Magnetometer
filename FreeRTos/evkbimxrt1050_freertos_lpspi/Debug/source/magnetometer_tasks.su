@@ -1,0 +1,11 @@
+magnetometer_tasks.c:17:6:magnetometer_task	152	static
+magnetometer_tasks.c:131:7:hmc5983_convert_hex_2_field	24	static
+magnetometer_tasks.c:157:9:readConfigA	40	static
+magnetometer_tasks.c:181:9:readConfigB	40	static
+magnetometer_tasks.c:204:9:readMode	40	static
+magnetometer_tasks.c:227:6:writeMode	32	static
+magnetometer_tasks.c:249:9:readMeasurement	40	static
+magnetometer_tasks.c:271:9:read_mag_x	32	static
+magnetometer_tasks.c:286:9:read_mag_y	32	static
+magnetometer_tasks.c:301:9:read_mag_z	32	static
+magnetometer_tasks.c:316:10:sendMessage	48	static
