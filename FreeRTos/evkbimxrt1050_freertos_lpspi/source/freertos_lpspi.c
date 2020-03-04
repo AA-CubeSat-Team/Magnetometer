@@ -94,6 +94,8 @@ int main(void)
 
     NVIC_SetPriority(EXAMPLE_LPSPI_MASTER_IRQN, 3);
 
+    /* Set up the queues for magnetometer and gyroscope data
+     *  The data type is defined in structDef.h*/
     xMagQueue = xQueueCreate(5, sizeof(Data_t));
     if(xMagQueue == NULL){
     	PRINTF("Failed in creating queue for magneteomter\r\n");
@@ -101,7 +103,6 @@ int main(void)
     		;
     }
     vQueueAddToRegistry( xMagQueue, "MagQueue" );
-
     xGyroQueue = xQueueCreate(5, sizeof(Data_t));
     if(xGyroQueue == NULL){
     	PRINTF("Failed in creating queue for gyroscope\r\n");
@@ -111,9 +112,8 @@ int main(void)
     vQueueAddToRegistry( xGyroQueue, "GyroQueue" );
 
 
-    PRINTF("TESTING MAGNETOMETER WITH SPI\r\n");
-    PRINTF("\r\n");
-
+    PRINTF("\r\nTESTING MAGNETOMETER WITH SPI\r\n");
+    /* Put an identification to the task for which sensor */
     SensorID magID1 = magnetometer1;
     SensorID magID2 = magnetometer2;
     SensorID magID3 = magnetometer3;
@@ -121,6 +121,7 @@ int main(void)
     SensorID gyroID2 = gyroscope2;
     SensorID gyroID3 = gyroscope3;
 
+    /*Create the task for each magnetometer and gyroscope*/
     if (xTaskCreate(magnetometer_task, "magnetometer_task1", configMINIMAL_STACK_SIZE + 128, (void*)magID1, master_task_PRIORITY, &MagTaskHandle1) !=
             pdPASS)
         {
@@ -162,22 +163,22 @@ int main(void)
 		PRINTF("Queue Receiver task creation failed!.\r\n");
 	}
 
-    //vTaskSuspend(QueTaskHandle);
     vTaskStartScheduler();
     for(;;)
     	;
 
 }
 
+/*
+ * Task that looks at the queue for magnetometer and prints them out
+ */
 void mag_queue_task(void* pvParameters){
 	Data_t message;
-	//int magCounter = 0;
 	bool magFlag1 = true;
 	bool magFlag2 = true;
 	bool magFlag3 = true;
 	while(magFlag1 || magFlag2 || magFlag3){
 		xQueueReceive(xMagQueue, &message, xBlockTime);
-		//PRINTF("Received Measurement %d\r\n", counter);
 		PRINTF("Received message from magnetometer %d\r\n", message.id);
 		if(message.id == magnetometer1 ){
 			magFlag1 = message.flag;
@@ -218,6 +219,9 @@ void mag_queue_task(void* pvParameters){
 	vTaskSuspend(NULL);
 }
 
+/*
+ * Task that looks at the queue for gyroscope and prints them out
+ */
 void gyro_queue_task(void* pvParameters){
 	Data_t message;
 	bool gyroFlag1 = true;

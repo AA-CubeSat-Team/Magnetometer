@@ -20,8 +20,7 @@ source/gyroscope_task.o source/gyroscope_task.d: \
  ../drivers/freertos/fsl_lpspi_freertos.h \
  ../amazon-freertos/include/portable.h \
  ../amazon-freertos/include/semphr.h ../amazon-freertos/include/queue.h \
- ../board/board.h ../board/clock_config.h ../drivers/fsl_gpio.h \
- ../board/pin_mux.h ../source/structDef.h
+ ../source/structDef.h
 
 ../source/gyroscope_task.h:
 
@@ -92,13 +91,5 @@ source/gyroscope_task.o source/gyroscope_task.d: \
 ../amazon-freertos/include/semphr.h:
 
 ../amazon-freertos/include/queue.h:
-
-../board/board.h:
-
-../board/clock_config.h:
-
-../drivers/fsl_gpio.h:
-
-../board/pin_mux.h:
 
 ../source/structDef.h:
