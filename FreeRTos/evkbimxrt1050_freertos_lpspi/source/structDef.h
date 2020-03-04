@@ -19,6 +19,7 @@ typedef struct {
 	float x;
 	float y;
 	float z;
+	bool flag;  // If the sensor is faulty, then set flag to 0
 } Data_t;
 
 #endif

@@ -49,14 +49,20 @@
 QueueHandle_t xMagQueue = NULL;
 QueueHandle_t xGyroQueue = NULL;
 
-TaskHandle_t MagTaskHandle;
-TaskHandle_t GyroTaskHandle;
+TaskHandle_t MagTaskHandle1;
+TaskHandle_t MagTaskHandle2;
+TaskHandle_t MagTaskHandle3;
+
+TaskHandle_t GyroTaskHandle1;
+TaskHandle_t GyroTaskHandle2;
+TaskHandle_t GyroTaskHandle3;
+
 TaskHandle_t MagQueTaskHandle;
 TaskHandle_t GyroQueTaskHandle;
 
 const TickType_t xBlockTime = portMAX_DELAY;
-const int MagMaxCounter = 100;
-const int GyroMaxCounter = 150;
+const int MagMaxCounter = 50;
+const int GyroMaxCounter = 75;
 
 
 /*******************************************************************************
@@ -88,7 +94,7 @@ int main(void)
 
     NVIC_SetPriority(EXAMPLE_LPSPI_MASTER_IRQN, 3);
 
-    xMagQueue = xQueueCreate(10, sizeof(Data_t));
+    xMagQueue = xQueueCreate(5, sizeof(Data_t));
     if(xMagQueue == NULL){
     	PRINTF("Failed in creating queue for magneteomter\r\n");
     	for(;;)
@@ -96,7 +102,7 @@ int main(void)
     }
     vQueueAddToRegistry( xMagQueue, "MagQueue" );
 
-    xGyroQueue = xQueueCreate(10, sizeof(Data_t));
+    xGyroQueue = xQueueCreate(5, sizeof(Data_t));
     if(xGyroQueue == NULL){
     	PRINTF("Failed in creating queue for gyroscope\r\n");
     	for(;;)
@@ -108,21 +114,43 @@ int main(void)
     PRINTF("TESTING MAGNETOMETER WITH SPI\r\n");
     PRINTF("\r\n");
 
-    int magID = magnetometer1;
-    int gyroID = gyroscope1;
-    //PRINTF("Test1 %d\r\n", magID);
-    //PRINTF("Test2 %d\r\n", gyroID);
+    SensorID magID1 = magnetometer1;
+    SensorID magID2 = magnetometer2;
+    SensorID magID3 = magnetometer3;
+    SensorID gyroID1 = gyroscope1;
+    SensorID gyroID2 = gyroscope2;
+    SensorID gyroID3 = gyroscope3;
 
-    if (xTaskCreate(magnetometer_task, "magnetometer_task1", configMINIMAL_STACK_SIZE + 128, (void*)&magID, master_task_PRIORITY, &MagTaskHandle) !=
+    if (xTaskCreate(magnetometer_task, "magnetometer_task1", configMINIMAL_STACK_SIZE + 128, (void*)magID1, master_task_PRIORITY, &MagTaskHandle1) !=
             pdPASS)
         {
-            PRINTF("Task creation failed!.\r\n");
+            PRINTF("Magnetometer Task 1 creation failed!.\r\n");
         }
-    if (xTaskCreate(gyroscope_task, "gyroscope_task", configMINIMAL_STACK_SIZE + 128, (void*)&gyroID, master_task_PRIORITY, &GyroTaskHandle) !=
-                pdPASS)
-            {
-                PRINTF("Task creation failed!.\r\n");
-            }
+    if (xTaskCreate(magnetometer_dummy_task, "magnetometer_task2", configMINIMAL_STACK_SIZE + 128, (void*)magID2, master_task_PRIORITY, &MagTaskHandle2) !=
+            pdPASS)
+        {
+            PRINTF("MagnetometerTask 2 creation failed!.\r\n");
+        }
+    if (xTaskCreate(magnetometer_dummy_task, "magnetometer_task3", configMINIMAL_STACK_SIZE + 128, (void*)magID3, master_task_PRIORITY, &MagTaskHandle3) !=
+            pdPASS)
+        {
+            PRINTF("Magnetometer Task 3 creation failed!.\r\n");
+        }
+    if (xTaskCreate(gyroscope_task, "gyroscope_task1", configMINIMAL_STACK_SIZE + 128, (void*)gyroID1, master_task_PRIORITY, &GyroTaskHandle1) !=
+			pdPASS)
+		{
+			PRINTF("Gyroscope Task 1 creation failed!.\r\n");
+		}
+    if (xTaskCreate(gyroscope_task, "gyroscope_task2", configMINIMAL_STACK_SIZE + 128, (void*)gyroID2, master_task_PRIORITY, &GyroTaskHandle2) !=
+			pdPASS)
+		{
+			PRINTF("Gyroscpe Task 2 creation failed!.\r\n");
+		}
+    if (xTaskCreate(gyroscope_task, "gyroscope_task3", configMINIMAL_STACK_SIZE + 128, (void*)gyroID3, master_task_PRIORITY, &GyroTaskHandle3) !=
+			pdPASS)
+		{
+			PRINTF("Gyroscope Task 3 creation failed!.\r\n");
+		}
     if(xTaskCreate(mag_queue_task, "mag_queue_task", configMINIMAL_STACK_SIZE + 80, NULL, master_task_PRIORITY, &MagQueTaskHandle) !=
             pdPASS)
     {
@@ -143,32 +171,48 @@ int main(void)
 
 void mag_queue_task(void* pvParameters){
 	Data_t message;
-	int magCounter = 0;
-	int counter[3];
-	while(magCounter < MagMaxCounter){
+	//int magCounter = 0;
+	bool magFlag1 = true;
+	bool magFlag2 = true;
+	bool magFlag3 = true;
+	while(magFlag1 || magFlag2 || magFlag3){
 		xQueueReceive(xMagQueue, &message, xBlockTime);
 		//PRINTF("Received Measurement %d\r\n", counter);
 		PRINTF("Received message from magnetometer %d\r\n", message.id);
-
 		if(message.id == magnetometer1 ){
-			PRINTF("Received X mag value is %f\r\n", message.x);
-			PRINTF("Received Y mag value is %f\r\n", message.y);
-			PRINTF("Received Z mag value is %f\r\n", message.z);
-			magCounter++;
-			vTaskResume(MagTaskHandle);
+			magFlag1 = message.flag;
+			if(magFlag1){
+				PRINTF("Received X mag value is %f\r\n", message.x);
+				PRINTF("Received Y mag value is %f\r\n", message.y);
+				PRINTF("Received Z mag value is %f\r\n", message.z);
+
+				vTaskResume(MagTaskHandle1);
+			}else{
+				PRINTF("Received finish flag for magnetometer %d\r\n", message.id);
+			}
 		}
 		else if(message.id == magnetometer2 ){
-			PRINTF("Received X mag value is %f\r\n", message.x);
-			PRINTF("Received Y mag value is %f\r\n", message.y);
-			PRINTF("Received Z mag value is %f\r\n", message.z);
-			//vTaskResume(MagTaskHandle);
+			magFlag2 = message.flag;
+			if(magFlag2){
+				PRINTF("Received X mag value is %f\r\n", message.x);
+				PRINTF("Received Y mag value is %f\r\n", message.y);
+				PRINTF("Received Z mag value is %f\r\n", message.z);
+
+				vTaskResume(MagTaskHandle2);
+			}else{
+				PRINTF("Received finish flag for magnetometer %d\r\n", message.id);
+			}
 		}else if(message.id == magnetometer3 ){
-			PRINTF("Received X mag value is %f\r\n", message.x);
-			PRINTF("Received Y mag value is %f\r\n", message.y);
-			PRINTF("Received Z mag value is %f\r\n", message.z);
-			//vTaskResume(MagTaskHandle);
+			magFlag3 = message.flag;
+			if(magFlag3){
+				PRINTF("Received X mag value is %f\r\n", message.x);
+				PRINTF("Received Y mag value is %f\r\n", message.y);
+				PRINTF("Received Z mag value is %f\r\n", message.z);
+				vTaskResume(MagTaskHandle3);
+			}else{
+				PRINTF("Received finish flag for magnetometer %d\r\n", message.id);
+			}
 		}
-		//vTaskSuspend(NULL);
 	}
 	PRINTF("Finished Magnetometer Queue Receiver Task\r\n");
 	vTaskSuspend(NULL);
@@ -176,31 +220,44 @@ void mag_queue_task(void* pvParameters){
 
 void gyro_queue_task(void* pvParameters){
 	Data_t message;
-	int gyroCounter = 0;
-	int counter[3];
-	while(gyroCounter < GyroMaxCounter){
+	bool gyroFlag1 = true;
+	bool gyroFlag2 = true;
+	bool gyroFlag3 = true;
+	while(gyroFlag1 || gyroFlag2 || gyroFlag3){
 		xQueueReceive(xGyroQueue, &message, xBlockTime);
-		//PRINTF("Received Measurement %d\r\n", counter);
 		PRINTF("Received message from gyroscope %d\r\n", message.id);
-		if(message.id == gyroscope1 ){
-			PRINTF("Received X gyro value is %f\r\n", message.x);
-			PRINTF("Received Y gyro value is %f\r\n", message.y);
-			PRINTF("Received Z gyro value is %f\r\n", message.z);
-			gyroCounter++;
-			vTaskResume(GyroTaskHandle);
+		if(message.id == gyroscope1){
+			gyroFlag1 = message.flag;
+			if(gyroFlag1){
+				PRINTF("Received X gyro value is %f\r\n", message.x);
+				PRINTF("Received Y gyro value is %f\r\n", message.y);
+				PRINTF("Received Z gyro value is %f\r\n", message.z);
+				vTaskResume(GyroTaskHandle1);
+			}else{
+				PRINTF("Received finish flag for gyroscope %d\r\n", message.id);
+			}
 		}
 		else if(message.id == gyroscope2 ){
-			PRINTF("Received X gyro value is %f\r\n", message.x);
-			PRINTF("Received Y gyro value is %f\r\n", message.y);
-			PRINTF("Received Z gyro value is %f\r\n", message.z);
-			//vTaskResume(MagTaskHandle);
+			gyroFlag2 = message.flag;
+			if(gyroFlag2){
+				PRINTF("Received X gyro value is %f\r\n", message.x);
+				PRINTF("Received Y gyro value is %f\r\n", message.y);
+				PRINTF("Received Z gyro value is %f\r\n", message.z);
+				vTaskResume(GyroTaskHandle2);
+			}else{
+				PRINTF("Received finish flag for gyroscope %d\r\n", message.id);
+			}
 		}else if(message.id ==gyroscope3 ){
-			PRINTF("Received X gyro value is %f\r\n", message.x);
-			PRINTF("Received Y gyro value is %f\r\n", message.y);
-			PRINTF("Received Z gyro value is %f\r\n", message.z);
-			//vTaskResume(MagTaskHandle);
+			gyroFlag3 = message.flag;
+			if(gyroFlag3){
+				PRINTF("Received X gyro value is %f\r\n", message.x);
+				PRINTF("Received Y gyro value is %f\r\n", message.y);
+				PRINTF("Received Z gyro value is %f\r\n", message.z);
+				vTaskResume(GyroTaskHandle3);
+			}else{
+				PRINTF("Received finish flag for gyroscope %d\r\n", message.id);
+			}
 		}
-		//vTaskSuspend(NULL);
 	}
 	PRINTF("Finished Gyroscope Queue Receiver Task\r\n");
 	vTaskSuspend(NULL);

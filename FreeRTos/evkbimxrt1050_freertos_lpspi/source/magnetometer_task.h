@@ -55,6 +55,6 @@
  * Task for magnetometer
  */
 void magnetometer_task(void* pvParameters);
-
+void magnetometer_dummy_task(void* pvParameters);
 
 #endif
