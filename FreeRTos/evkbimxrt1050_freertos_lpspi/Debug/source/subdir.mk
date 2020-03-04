@@ -5,17 +5,20 @@
 # Add inputs and outputs from these tool invocations to the build variables 
 C_SRCS += \
 ../source/freertos_lpspi.c \
-../source/magnetometer_tasks.c \
+../source/gyroscope_task.c \
+../source/magnetometer_task.c \
 ../source/semihost_hardfault.c 
 
 OBJS += \
 ./source/freertos_lpspi.o \
-./source/magnetometer_tasks.o \
+./source/gyroscope_task.o \
+./source/magnetometer_task.o \
 ./source/semihost_hardfault.o 
 
 C_DEPS += \
 ./source/freertos_lpspi.d \
-./source/magnetometer_tasks.d \
+./source/gyroscope_task.d \
+./source/magnetometer_task.d \
 ./source/semihost_hardfault.d 
 
 

@@ -19,8 +19,8 @@ source/freertos_lpspi.o source/freertos_lpspi.d: \
  ../amazon-freertos/include/portable.h \
  ../amazon-freertos/include/semphr.h ../amazon-freertos/include/queue.h \
  ../board/board.h ../board/clock_config.h ../drivers/fsl_gpio.h \
- ../drivers/fsl_clock.h ../board/pin_mux.h ../source/magnetometer_tasks.h \
- ../board/peripherals.h
+ ../drivers/fsl_clock.h ../board/pin_mux.h ../source/magnetometer_task.h \
+ ../board/peripherals.h ../source/gyroscope_task.h ../source/structDef.h
 
 ../amazon-freertos/include/FreeRTOS.h:
 
@@ -96,6 +96,10 @@ source/freertos_lpspi.o source/freertos_lpspi.d: \
 
 ../board/pin_mux.h:
 
-../source/magnetometer_tasks.h:
+../source/magnetometer_task.h:
 
 ../board/peripherals.h:
+
+../source/gyroscope_task.h:
+
+../source/structDef.h:
