@@ -14,6 +14,9 @@ static uint8_t read_mag_y(lpspi_rtos_handle_t* rtos_handle, uint8_t* sendBuffer,
 static uint8_t read_mag_z(lpspi_rtos_handle_t* rtos_handle, uint8_t* sendBuffer, uint8_t* receiveBuffer);
 static status_t sendMessage(lpspi_rtos_handle_t* master_rtos_handle, uint8_t* sendBuffer, uint8_t* receiveBuffer, uint8_t transferSize);
 
+/*  TODO: instead of blocking the task with delay, try
+ * using synchronization event such as binary semaphores
+ */
 
 void magnetometer_task(void* pvParameters){
     lpspi_rtos_handle_t master_rtos_handle;
@@ -23,6 +26,9 @@ void magnetometer_task(void* pvParameters){
     extern QueueHandle_t xMagQueue;
     extern int32_t MagMaxCounter;
 
+	// Make sure that the queue is not NULL
+//	assert(xMagQueue != NULL);
+//	assert(pvParameters != NULL);
     /*  Defining which sensor's we're using
      *  and the message we're going to send to queue.
      */
@@ -71,7 +77,8 @@ void magnetometer_task(void* pvParameters){
     float fYval;
     float fZval;
     while(counter < MagMaxCounter){
-    	PRINTF("Magnetometer measurement %d\r\n", counter);
+    	if(PRINT_MAG_STATUS)
+    		PRINTF("Magnetometer measurement %d\r\n", counter);
 
     	// Read the x measurement of the mangetometer
     	xSize = read_mag_x(&master_rtos_handle, sendBuffer, receiveBuffer);
@@ -79,7 +86,9 @@ void magnetometer_task(void* pvParameters){
 			xVal = receiveBuffer[1] << 8 | receiveBuffer[2];
     		fXval = hmc5983_convert_hex_2_field(xVal, gainVal);
     		//xQueueSend( xQueue,(void*) &fXval, xBlockTime );
-			PRINTF("Sent X mag data to Queue: %f\r\n", fXval);
+    		if(PRINT_MAG_STATUS){
+    			PRINTF("Mag%d: Sent X mag data to Queue: %f\r\n", message.id+1, fXval);
+    		}
 		}else{
     		PRINTF("FAILED GETTING X MAG VALUE\r\n");
     		message.flag = false;
@@ -92,7 +101,9 @@ void magnetometer_task(void* pvParameters){
     		yVal = receiveBuffer[1] << 8 | receiveBuffer[2];
     		fYval = hmc5983_convert_hex_2_field(yVal, gainVal);
     		//xQueueSend( xQueue,(void*) &fYval, xBlockTime );
-			PRINTF("Sent Y mag data to Queue: %f\r\n", fYval);
+    		if(PRINT_MAG_STATUS){
+    			PRINTF("Mag%d: Sent Y mag data to Queue: %f\r\n", message.id+1, fYval);
+    		}
 		}else{
     		PRINTF("FAILED GETTING Y MAG VALUE\r\n");
     		message.flag = false;
@@ -104,7 +115,9 @@ void magnetometer_task(void* pvParameters){
     	if(zSize != 0){
     		zVal = receiveBuffer[1] << 8 | receiveBuffer[2];
     		fZval = hmc5983_convert_hex_2_field(zVal, gainVal);
-			PRINTF("Sent Z mag data to Queue: %f\r\n", fZval);
+    		if(PRINT_MAG_STATUS){
+    			PRINTF("Mag%d: Sent Z mag data to Queue: %f\r\n", message.id, fZval);
+    		}
     		//xQueueSend( xQueue, (void*)&fZval, xBlockTime );
     	}else{
     		PRINTF("FAILED GETTING Z MAG VALUE\r\n");
@@ -116,10 +129,6 @@ void magnetometer_task(void* pvParameters){
     	message.z = fZval;
     	xQueueSendToBack(xMagQueue, (void*)&message, xBlockTime );
 
-
-    	// Resume the Queue Receiver Task so that it could
-    	// look at the Queue
-    	//vTaskResume(QueTaskHandle);
     	// Suspend self so that the Queue task could run.
     	vTaskSuspend(NULL);
 
@@ -134,12 +143,12 @@ void magnetometer_task(void* pvParameters){
     // Deinitialize the LPSPI and related RTOS
     LPSPI_RTOS_Deinit(&master_rtos_handle);
 
-    PRINTF("Finished Magnetometer Task %d\r\n", message.id);
+    PRINTF("Finished Magnetometer Task %d\r\n", message.id+1);
     //vTaskResume(QueTaskHandle);
     vTaskSuspend(NULL);
 }
 
-// A dummy gyroscope task.
+// A dummy magnetometer task.
 // TODO implement actual gyroscope task
 void magnetometer_dummy_task(void* pvParameters){
 	//lpspi_rtos_handle_t master_rtos_handle;
@@ -148,6 +157,9 @@ void magnetometer_dummy_task(void* pvParameters){
 	// Get the handle from the main function
 	extern QueueHandle_t xMagQueue;
 	extern int32_t MagMaxCounter;
+
+	// Make sure that the queue is not NULL
+//	assert(xMagQueue != NULL && pvParameters != NULL);
 
 	/*  Defining which sensor's we're using
 	 *  and the message we're going to send to queue.
@@ -165,16 +177,18 @@ void magnetometer_dummy_task(void* pvParameters){
 	float fYval;
 	float fZval;
 	while(counter < MagMaxCounter){
-		PRINTF("Magnetometer dummy measurement %d\r\n", counter);
+		if(PRINT_MAG_STATUS)
+			PRINTF("Magnetometer dummy measurement %d\r\n", counter);
 
 		fXval = counter+1;
 		fYval = counter+2;
 		fZval = counter +3;
 
-		PRINTF("Sent magnetometer X = %f\r\n", fXval);
-		PRINTF("Sent magnetometer Y = %f\r\n", fYval);
-		PRINTF("Sent magnetometer Z = %f\r\n", fZval);
-
+		if(PRINT_MAG_STATUS){
+			PRINTF("Mag%d: Sent magnetometer X = %f\r\n", message.id+1, fXval);
+			PRINTF("Mag%d: Sent magnetometer Y = %f\r\n", message.id+1, fYval);
+			PRINTF("Mag%d: Sent magnetometer Z = %f\r\n", message.id+1, fZval);
+		}
 		message.x = fXval;
 		message.y = fYval;
 		message.z = fZval;
@@ -194,7 +208,7 @@ void magnetometer_dummy_task(void* pvParameters){
 	// Deinitialize the LPSPI and related RTOS
 	//LPSPI_RTOS_Deinit(&master_rtos_handle);
 
-	PRINTF("Finished Magnetometer dummy Task %d\r\n", message.id);
+	PRINTF("Finished Magnetometer dummy Task %d\r\n", message.id+1);
 	//vTaskResume(QueTaskHandle);
 	vTaskSuspend(NULL);
 }
@@ -234,6 +248,7 @@ static float hmc5983_convert_hex_2_field(int16_t val, uint8_t hmc5983GainVal){
  */
 static uint8_t readConfigA(lpspi_rtos_handle_t* rtos_handle,  uint8_t* sendBuffer, uint8_t* receiveBuffer)
 {
+//	assert(sendBuffer != NULL && receiveBuffer != NULL && rtos_handle!= NULL);
     uint8_t transferSize = 2;
     sendBuffer[0] = 0x80 | HMC5983_CONFIG_A_REG;
 
@@ -241,10 +256,12 @@ static uint8_t readConfigA(lpspi_rtos_handle_t* rtos_handle,  uint8_t* sendBuffe
 
     if (status == kStatus_Success)
     {
-        PRINTF("Able to read configuration A.\r\n");
-        for(int j =0 ; j < transferSize; j++){
-        	PRINTF("data %d: Input = 0x%x \t0x%x\r\n", j, sendBuffer[j], receiveBuffer[j]);
-        }
+    	if(PRINT_MAG_STATUS){
+			PRINTF("Able to read configuration A.\r\n");
+			for(int j =0 ; j < transferSize; j++){
+				PRINTF("data %d: Input = 0x%x \t0x%x\r\n", j, sendBuffer[j], receiveBuffer[j]);
+			}
+    	}
         return transferSize;
     }
 
@@ -258,6 +275,7 @@ static uint8_t readConfigA(lpspi_rtos_handle_t* rtos_handle,  uint8_t* sendBuffe
  */
 static uint8_t readConfigB(lpspi_rtos_handle_t* rtos_handle, uint8_t* sendBuffer, uint8_t* receiveBuffer)
 {
+//	assert(sendBuffer != NULL && receiveBuffer != NULL && rtos_handle!= NULL);
     uint8_t transferSize = 2;
     sendBuffer[0] = 0x80 | HMC5983_CONFIG_B_REG;
 
@@ -265,10 +283,12 @@ static uint8_t readConfigB(lpspi_rtos_handle_t* rtos_handle, uint8_t* sendBuffer
 
     if (status == kStatus_Success)
     {
-        PRINTF("Able to read configuration B.\r\n");
-        for(int j =0 ; j < transferSize; j++){
-        	PRINTF("data %d: Input = 0x%x \t0x%x\r\n", j, sendBuffer[j], receiveBuffer[j]);
-        }
+    	if(PRINT_MAG_STATUS){
+			PRINTF("Able to read configuration B.\r\n");
+			for(int j =0 ; j < transferSize; j++){
+				PRINTF("data %d: Input = 0x%x \t0x%x\r\n", j, sendBuffer[j], receiveBuffer[j]);
+			}
+    	}
         return transferSize;
     }
 	PRINTF("Error in reading configuration B.\r\n");
@@ -281,6 +301,7 @@ static uint8_t readConfigB(lpspi_rtos_handle_t* rtos_handle, uint8_t* sendBuffer
  */
 static uint8_t readMode(lpspi_rtos_handle_t* rtos_handle,  uint8_t* sendBuffer, uint8_t* receiveBuffer)
 {
+//	assert(sendBuffer != NULL && receiveBuffer != NULL && rtos_handle!= NULL);
     uint8_t transferSize = 2;
     sendBuffer[0] = 0x80 | HMC5983_MODE_REG;
 
@@ -288,10 +309,12 @@ static uint8_t readMode(lpspi_rtos_handle_t* rtos_handle,  uint8_t* sendBuffer, 
 
     if (status == kStatus_Success)
     {
-        PRINTF("Able to read Mode Register.\r\n");
-        for(int j =0 ; j < transferSize; j++){
-        	PRINTF("data %d: Input = 0x%x \t0x%x\r\n", j, sendBuffer[j], receiveBuffer[j]);
-        }
+    	if(PRINT_MAG_STATUS){
+			PRINTF("Able to read Mode Register.\r\n");
+			for(int j =0 ; j < transferSize; j++){
+				PRINTF("data %d: Input = 0x%x \t0x%x\r\n", j, sendBuffer[j], receiveBuffer[j]);
+			}
+    	}
         return transferSize;
     }
 
@@ -303,6 +326,7 @@ static uint8_t readMode(lpspi_rtos_handle_t* rtos_handle,  uint8_t* sendBuffer, 
  *  Write a value to the Mode Register
  */
 static void writeMode(lpspi_rtos_handle_t* rtos_handle,  uint8_t* sendBuffer, uint8_t val){
+//	assert(sendBuffer != NULL && rtos_handle!= NULL);
 	uint8_t transferSize = 2;
 	sendBuffer[0] = HMC5983_MODE_REG;
 	sendBuffer[1] = val;
@@ -326,6 +350,7 @@ static void writeMode(lpspi_rtos_handle_t* rtos_handle,  uint8_t* sendBuffer, ui
  */
 static uint8_t readMeasurement(lpspi_rtos_handle_t* rtos_handle,  uint8_t* sendBuffer, uint8_t* receiveBuffer)
 {
+//	assert(sendBuffer != NULL && receiveBuffer != NULL && rtos_handle!= NULL);
     uint8_t transferSize = 7;
     sendBuffer[0] = 0xc0 | HMC5983_MSB_X_REG;
 
@@ -333,10 +358,12 @@ static uint8_t readMeasurement(lpspi_rtos_handle_t* rtos_handle,  uint8_t* sendB
 
     if (status == kStatus_Success)
     {
-        PRINTF("Able to read measurements.\r\n");
-        for(int j =0 ; j < transferSize; j++){
-        	PRINTF("data %d: Input = 0x%x \t0x%x\r\n", j, sendBuffer[j], receiveBuffer[j]);
-        }
+    	if(PRINT_MAG_STATUS){
+			PRINTF("Able to read measurements.\r\n");
+			for(int j =0 ; j < transferSize; j++){
+				PRINTF("data %d: Input = 0x%x \t0x%x\r\n", j, sendBuffer[j], receiveBuffer[j]);
+			}
+    	}
         return transferSize;
     }
     PRINTF("Error in reading Measurements.\r\n");
@@ -347,6 +374,7 @@ static uint8_t readMeasurement(lpspi_rtos_handle_t* rtos_handle,  uint8_t* sendB
  * Read the x magnetic field of the magnetometer
  */
 static uint8_t read_mag_x(lpspi_rtos_handle_t* rtos_handle, uint8_t* sendBuffer, uint8_t* receiveBuffer){
+//	assert(sendBuffer != NULL && receiveBuffer != NULL && rtos_handle!= NULL);
 	uint8_t transferSize = 3;
 	sendBuffer[0] = 0xC0 | HMC5983_MSB_X_REG;
     status_t status = sendMessage(rtos_handle, sendBuffer, receiveBuffer, transferSize);
@@ -362,6 +390,7 @@ static uint8_t read_mag_x(lpspi_rtos_handle_t* rtos_handle, uint8_t* sendBuffer,
  * Read the y magnetic field of the magnetometer
  */
 static uint8_t read_mag_y(lpspi_rtos_handle_t* rtos_handle, uint8_t* sendBuffer, uint8_t* receiveBuffer){
+	assert(sendBuffer != NULL && receiveBuffer != NULL && rtos_handle!= NULL);
 	uint8_t transferSize = 3;
 	sendBuffer[0] = 0xC0 | HMC5983_MSB_Y_REG;
     status_t status = sendMessage(rtos_handle, sendBuffer, receiveBuffer, transferSize);
@@ -377,6 +406,7 @@ static uint8_t read_mag_y(lpspi_rtos_handle_t* rtos_handle, uint8_t* sendBuffer,
  * Read the z magnetic field of the magnetometer
  */
 static uint8_t read_mag_z(lpspi_rtos_handle_t* rtos_handle, uint8_t* sendBuffer, uint8_t* receiveBuffer){
+//	assert(sendBuffer != NULL && receiveBuffer != NULL && rtos_handle!= NULL);
 	uint8_t transferSize = 3;
 	sendBuffer[0] = 0xC0 | HMC5983_MSB_Z_REG;
     status_t status = sendMessage(rtos_handle, sendBuffer, receiveBuffer, transferSize);
@@ -391,7 +421,8 @@ static uint8_t read_mag_z(lpspi_rtos_handle_t* rtos_handle, uint8_t* sendBuffer,
 /*
  * Send the message using SPI protocol
  */
-static status_t sendMessage(lpspi_rtos_handle_t* master_rtos_handle, uint8_t* sendBuffer, uint8_t* receiveBuffer, uint8_t transferSize){
+static status_t sendMessage(lpspi_rtos_handle_t* rtos_handle, uint8_t* sendBuffer, uint8_t* receiveBuffer, uint8_t transferSize){
+//	assert(sendBuffer != NULL && receiveBuffer != NULL && rtos_handle!= NULL && transferSize > 0);
     lpspi_transfer_t masterXfer;
     status_t status;
 
@@ -401,7 +432,7 @@ static status_t sendMessage(lpspi_rtos_handle_t* master_rtos_handle, uint8_t* se
     masterXfer.dataSize    = transferSize;
     masterXfer.configFlags = LPSPI_MASTER_PCS_FOR_TRANSFER | kLPSPI_MasterPcsContinuous | kLPSPI_SlaveByteSwap;
 
-    status = LPSPI_RTOS_Transfer(master_rtos_handle, &masterXfer);
+    status = LPSPI_RTOS_Transfer(rtos_handle, &masterXfer);
 
     return status;
 }

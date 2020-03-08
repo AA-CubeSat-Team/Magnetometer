@@ -10,6 +10,7 @@
 #include "fsl_debug_console.h"
 #include "fsl_lpspi.h"
 #include "fsl_lpspi_freertos.h"
+#include "assert.h"
 
 // The lpspi peripheral that we're using
 #define LPSPI_MASTER_BASEADDR (LPSPI3)
@@ -46,9 +47,10 @@
 #define HMC5983Gain56   0xC0
 #define HMC5983Gain81   0xE0
 
+#define PRINT_MAG_STATUS 1
 
 /*
- * Task for magnetometer
+ * Tasks for magnetometer
  */
 void magnetometer_task(void* pvParameters);
 void magnetometer_dummy_task(void* pvParameters);

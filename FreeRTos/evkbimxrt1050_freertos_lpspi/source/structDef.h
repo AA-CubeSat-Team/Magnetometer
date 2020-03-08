@@ -15,7 +15,7 @@ typedef enum{
 typedef struct {
 	SensorID id;
 	// TODO find a better way to define the dataset instead of
-	// strictly saying there's own 3 variables
+	// strictly saying there's own 3 variables. Don't use dynamic allocation after initialization
 	float x;
 	float y;
 	float z;

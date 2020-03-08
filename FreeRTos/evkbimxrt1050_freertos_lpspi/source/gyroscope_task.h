@@ -17,6 +17,9 @@
 #include "fsl_debug_console.h"
 #include "fsl_lpspi.h"
 #include "fsl_lpspi_freertos.h"
+#include "assert.h"
+
+#define PRINT_GYRO_STATUS 1
 
 /*
  * Task for gyroscope

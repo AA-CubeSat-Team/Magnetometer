@@ -19,6 +19,10 @@ void gyroscope_task(void* pvParameters){
 	extern QueueHandle_t xGyroQueue;
 	extern int32_t GyroMaxCounter;
 
+	// Make sure that the queue is not NULL
+//	assert(xGyroQueue != NULL);
+//	assert(pvParameters != NULL);
+
 	/*  Defining which sensor's we're using
 	 *  and the message we're going to send to queue.
 	 */
@@ -35,16 +39,18 @@ void gyroscope_task(void* pvParameters){
 	float fYval;
 	float fZval;
 	while(counter < GyroMaxCounter){
-		PRINTF("Gyroscope measurement %d\r\n", counter);
+		if(PRINT_GYRO_STATUS)
+			PRINTF("Gyroscope measurement %d\r\n", counter);
 
 		fXval = counter+1;
 		fYval = counter+2;
 		fZval = counter +3;
 
-		PRINTF("Sent gyroscope X = %f\r\n", fXval);
-		PRINTF("Sent gyroscope Y = %f\r\n", fYval);
-		PRINTF("Sent gyroscope Z = %f\r\n", fZval);
-
+		if(PRINT_GYRO_STATUS){
+			PRINTF("Gyro%d: Sent gyroscope X = %f\r\n", message.id-2, fXval);
+			PRINTF("Gyro%d: Sent gyroscope Y = %f\r\n", message.id-2, fYval);
+			PRINTF("Gyro%d: Sent gyroscope Z = %f\r\n", message.id-2, fZval);
+		}
 		message.x = fXval;
 		message.y = fYval;
 		message.z = fZval;
