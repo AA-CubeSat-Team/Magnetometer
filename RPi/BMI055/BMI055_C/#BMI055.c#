@@ -1,0 +1,185 @@
+#include "BMI055.h"
+#include "../lib/I2Cdrive.h"
+#include "../lib/externalLib.h"
+
+//SDO Pin is set to 
+//  GND: 0x68 Hiro: Why is the slave address set to 0x68.
+//VDDIO: 0x69
+#define BMI055_GYRO_ADDR 0x69   // Slave Adress
+#define BMI055_GYRO_CHIP_ID 0x00  // Chip identification. Should return 0x0F
+#define BMI055_GYRO_X_LSB 0x02  // Least significant bits of X (two-complement format)
+#define BMI055_GYRO_X_MSB 0x03  // Most significant bits of X
+#define BMI055_GYRO_Y_LSB 0x04  // Least significant bits of Y
+#define BMI055_GYRO_Y_MSB 0x05  // Most significant bits of Y
+#define BMI055_GYRO_Z_LSB 0x06  // Least significant bits of Z
+#define BMI055_GYRO_Z_MSB 0x07  // Most significant bits of Z
+#define BMI055_GYRO_STAT0 0x09 // Interrupt status bits
+#define BMI055_GYRO_STAT1 0x0A // Interrupt status bits
+#define BMI055_GYRO_STAT2 0x0B  // motion interrupt status bits
+#define BMI055_GYRO_STAT3 0x0C // high rate interrupt status bits
+#define BMI055_GYRO_FIFO 0x0E   // FIFO status flags
+#define BMI055_GYRO_RANGE 0x0F  // Angular rate range and resolution
+#define BMI055_GYRO_BAND 0x10   // Selection of the rate data filter bandwidth
+#define BMI055_GYRO_POW 0x11    // Main power modes
+
+#define BMI055_GYRO_BIST 0x3C   // Built-in self test address
+
+
+int connect_bmi055_I2C(){
+    // Connect to the BMI055_GYRO by I2C
+    return i2c_connect_2_slave(BMI055_GYRO_ADDR);
+}
+
+int bmi055_set_resolution(unsigned char res){
+    /* res can be from 0x00 to 0x04
+     * Check comments in bmi055_get_resolution for details of each value
+     */
+    int i = 0;
+    while(i2c_set_register_val(BMI055_GYRO_RANGE, res) && i < 10){
+        printf("Error in setting mode reg. Trying again\n");
+        i += 1;
+    }
+    if (i == 10){
+        printf("Could not set mode register.\n");
+        return 1;
+    }
+    // Success
+    return 0;
+    }
+
+float bmi055_get_resolution(){
+    // Returns resolution in deg/s/LSB
+
+    unsigned char range_byte = i2c_get_buffer_index(i2c_get_register_val(BMI055_GYRO_RANGE));
+    /* Masking the first 5 reserved bits by doing a Logical AND 
+        with 00000111 (hex 0x07) */
+    range_byte = range_byte & 0x07;
+    /*
+    Based on the last 3 bits of the range register, 5 ranges can be selected.
+    Resolution has units millidegress/sec/LSBit.
+    Below, only the last 3 bits are being referred to.
+    */
+   // Reset value of the register is 000, so intialize resolution to its corresponding value.
+    float resolution = 61.0; // Use double?
+    switch (range_byte)
+    {
+    // case 000 is default
+    // case 001
+    case 0x01:
+        resolution = 30.5; // millidegress/sec/LSBit <=> 32.8 LSBit/deg/s
+        break;
+    
+    // case 010
+    case 0x02:
+        resolution = 15.3; // millidegress/sec/LSBit <=> 65.6 LSBit/deg/s
+        break;
+    
+    // case 011
+    case 0x03:
+        resolution = 7.6; // millidegress/sec/LSBit <=> 131.2 LSBit/deg/s
+        break;
+    
+    // case 100
+    case 0x04:
+        resolution = 3.8; // millidegress/sec/LSBit <=> 262.4 LSBit/deg/s
+        break;
+
+    // case 000 is default
+    default:
+        break;
+    }
+    // convert millideg/s/LSB to deg/s/LSB
+    return resolution/1000.0;
+}
+
+float bmi055_get_raw_gyro_X(float resolution){
+    // Returns angular velocity along x-axis in deg/s for the input resolution.
+
+    // Ref page 82, sec 7.2.1 Rate Data.
+    // Angular rate data is stored in 2's complement, so two bytes need to be read.
+    // As per the datasheet, reading LSB before MSB guarantees data consistency.
+    int index_LSB = i2c_get_register_val(BMI055_GYRO_X_LSB);
+    int index_MSB = i2c_get_register_val(BMI055_GYRO_X_MSB);
+
+    if (index_LSB == -1 || index_MSB == -1){
+        return 0.0/0.0;
+    }
+
+    unsigned char byte_LS = i2c_get_buffer_index(index_LSB);
+    unsigned char byte_MS = i2c_get_buffer_index(index_MSB);
+
+    // To get the actual 16 bit value, shift the MSB 8 bits then logical OR with LSB.
+    int16_t ang_rate = (byte_MS << 8 | (byte_LS));
+    
+    // float resolution = bmi055_get_resolution();
+    return (float) ang_rate*resolution;
+}
+
+float bmi055_get_raw_gyro_Y(float resolution){
+    // Returns angular velocity along y-axis in deg/s for the input resolution.
+    
+    // Ref page 82, sec 7.2.1 Rate Data.
+    // Angular rate data is stored in 2's complement, so two bytes need to be read.
+    // As per the datasheet, reading LSB before MSB guarantees data consistency.
+    int index_LSB = i2c_get_register_val(BMI055_GYRO_Y_LSB);
+    int index_MSB = i2c_get_register_val(BMI055_GYRO_Y_MSB);
+
+    if (index_LSB == -1 || index_MSB == -1){
+        return 0.0/0.0;
+    }
+
+    unsigned char byte_LS = i2c_get_buffer_index(index_LSB);
+    unsigned char byte_MS = i2c_get_buffer_index(index_MSB);
+
+    // To get the actual 16 bit value, shift the MSB 8 bits then logical OR with LSB.
+    int16_t ang_rate = (byte_MS << 8 | (byte_LS));
+    
+    // float resolution = bmi055_get_resolution();
+    return (float) ang_rate*resolution;
+}
+
+float bmi055_get_raw_gyro_Z(float resolution){
+    // Returns angular velocity along z-axis in deg/s for the input resolution.
+    
+    // Ref page 82, sec 7.2.1 Rate Data.
+    // Angular rate data is stored in 2's complement, so two bytes need to be read.
+    // As per the datasheet, reading LSB before MSB guarantees data consistency.
+    int index_LSB = i2c_get_register_val(BMI055_GYRO_Z_LSB);
+    int index_MSB = i2c_get_register_val(BMI055_GYRO_Z_MSB);
+
+    if (index_LSB == -1 || index_MSB == -1){
+        return 0.0/0.0;
+    }
+
+    unsigned char byte_LS = i2c_get_buffer_index(index_LSB);
+    unsigned char byte_MS = i2c_get_buffer_index(index_MSB);
+
+    // To get the actual 16 bit value, shift the MSB 8 bits then logical OR with LSB.
+    int16_t ang_rate = (byte_MS << 8 | (byte_LS));
+    
+    // float resolution = bmi055_get_resolution();
+    return (float) ang_rate*resolution;
+}
+
+int bmi055_run_bist(){
+    //Run Built-in self test to check sensor functioning
+    // Write '1' to bit0 to trigger test
+    if(!i2c_set_register_val(BMI055_GYRO_BIST, 0x01)){
+        unsigned char test_result = i2c_get_buffer_index(i2c_get_register_val(BMI055_GYRO_BIST));
+        // Mask all bits except bit1 to read bist_rdy
+        // and wait until it is 1
+        while((test_result & 0x02) != 0x02){
+                test_result = i2c_get_buffer_index(i2c_get_register_val(BMI055_GYRO_BIST));
+                printf("Waiting for Built-in self test to complete...\n");
+            }
+        // Mask all bits except bit2 to read bist_fail
+        if((test_result & 0x04) == 0x04){
+                printf("Sensor not OK.\n");
+                return 1;
+            }
+        else{
+            printf("Sensor OK.\n");
+            return 0;
+            }
+    }
+}

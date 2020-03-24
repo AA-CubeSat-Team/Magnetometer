@@ -1,0 +1,14 @@
+cc=g++
+CFLAGS=-I.
+DEPS = ../Lib/I2Cdrive.h BMI055.h ../Lib/externalLib.h
+OBJ = Main.o ../Lib/I2Cdrive.o BMI055.o
+OBJ2 = ../Lib/I2Cdrive.o BMI055.o
+
+%.o: %.c $(DEPS)
+	$(cc) -c -o $@ $< $(CFLAGS)
+
+main: $(OBJ)
+	$(cc) -o $@ $^ $(CFLAGS)
+
+clean:
+	rm ./main ./BMI055.o
