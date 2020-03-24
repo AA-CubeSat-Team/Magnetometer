@@ -1,0 +1,99 @@
+# BMI055
+
+Interfacint with the IMU BMI055 with Raspberry Pi using I2C.
+
+##### Table of Contents
+- [Hardware Setup]
+- [Software Setup]
+- [Makefile]
+- [I2C overview]
+
+
+## Hardware Setup
+
+TODO
+
+## Software Setup
+
+
+For the RPi to communicate to the BMI055 through I2C, we used a Linux tool i2c-tool. To test if the i2c-tool is already installed, run the following code on the Linux terminal:
+
+```
+i2cdetect -y 1
+```
+
+and you should see something familiar being printed out
+
+```
+     0  1  2  3  4  5  6  7  8  9  a  b  c  d  e  f
+00: -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- --
+10: -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- --
+20: -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- --
+30: -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- --
+40: -- -- -- -- -- -- -- -- -- -- -- 68 -- -- -- --
+50: -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- --
+60: -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- --
+70: -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- --
+
+```
+
+If there's a hexadecimal value being printed out, then the i2c-tool was able to detect a slave chip on the I2C bus. The I2C slave address of the BMI055 is 0x68, so if you run the command above and see 0x1E then you were successfully able to connect to the BMI055 throguh I2C. 
+
+If Linux says that you don't have i2cdetect, then install 'i2c-tool'using the following commands:
+
+```
+sudo apt-get update
+sudo apt-get install i2c-tools
+```
+
+If it's having a problem finding the file '/dev/i2-1' then open the  file /boot/config.txt, uncomment the following line, and reboot:
+
+```
+dtparam=i2c1=on 
+```
+
+To use the more complicated calibration method for the magnetometer, you'll also need to install GSL (GNU Scientific Library). You can install GSL onto Linux-like environment by using the following command:
+
+```
+sudo apt-get install libgsl-dev
+```
+
+Note that GSL does a bit of space and we don't use all of it's utilities, so finding some alternative might be best for the project. 
+
+[Back to Table of Contents](#table-of-contents)
+
+## Makefile
+
+Normally to compile a C program, you will have to write out the command in the terminal using gcc. For instance let's say you have a simple C file called "hello.c". Then you could write out the following command to build an executable file "hello.exe":
+
+```
+ gcc -o hello.exe hello.c
+```
+
+and then to run the executable file, you just need to write 
+
+```
+./hello.exe
+```
+
+in the terminal.
+
+Writing out the gcc command isn't difficult if you're only compiling from a single file using standard C library. However, you'll need to write it out every time you want to recompile which can become bothersome, and if you have to link other files then the gcc command will becomes more complex. In order to make the compiling process easier, there's a "Makefile" which can help create the gcc command. Therefore, whenever you make change to the C program, you can recompile the program by typing in the terminal:
+
+```
+make
+```
+
+which will compile based on how you define Makefile. To clean any file that was made from Makefile, then run the command in the terminal:
+
+```
+make clean
+```
+
+A usefule link to learn more about Makefile is [here](http://www.cs.colby.edu/maxwell/courses/tutorials/maketutor/).
+
+[Back to Table of Contents](#table-of-contents)
+
+## Brief overview of code
+
+TODO
