@@ -1,0 +1,11 @@
+/**
+This is a c program for using SPI interface. the 
+ **/
+
+#include "SPIinterface.h"
+#include <wiringPiSPI.h>
+
+#define BUFFER_SIZE_SPI 60
+static int file_spi;
+static unsinged char spi_buffer[BUFFER_SIZE_SPI];
+static int spi_buffer_index = 0;

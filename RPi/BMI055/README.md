@@ -3,12 +3,12 @@
 Interfacint with the IMU BMI055 with Raspberry Pi using I2C.
 
 ##### Table of Contents
-- [Hardware Setup]
-- [Software Setup]
-- [Makefile]
-- [Brief overview of code]
-- [Examples]
-- [Useful Links]
+- [Hardware Setup](#hardware-setup)
+- [Software Setup](#software-setup)
+- [Makefile](#makefile)
+- [Brief overview of code](#brief-overview-of-code)
+- [Examples](#examples)
+- [Useful Links](#useful-links)
 
 ## Hardware Setup
 
