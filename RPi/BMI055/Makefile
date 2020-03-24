@@ -1,0 +1,15 @@
+cc=gcc
+CFLAGS=-I.
+DEPS = ./lib/I2Cdrive.h BMI055.h ./lib/externalLib.h
+OBJ = ./src/Main.o ./lib/I2Cdrive.o ./src/BMI055.o
+
+all: main.exe
+
+%.o: %.c $(DEPS)
+	$(cc)  $(CFLAGS) -c -o $@ $<
+
+main.exe: $(OBJ)
+	$(cc) -o $@ $^ $(CFLAGS)
+
+clean:
+	rm main.exe ./lib/I2Cdrive.o ./src/BMI055.o ./main_savedata.o ./main.o
