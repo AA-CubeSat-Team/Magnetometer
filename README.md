@@ -15,3 +15,9 @@ To clone this repository type the following command:
 ```
 git clone https://github.com/AA-CubeSat-Team/Sensor.git
 ```
+
+If you have any questions or advice, please don't hesitate to ask. 
+
+
+If you have any questions or tip, please don't hesitate to ask. 
+
