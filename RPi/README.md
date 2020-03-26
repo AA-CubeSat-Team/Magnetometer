@@ -1,21 +1,6 @@
 # Sensors
 
-In this directory will contain the code for the sensors for the raspberry pi. Majority of the code will be implemented in C.
+Each directory listed here is associated to different sensors. Currently there are only two sensors that are being tested, but maybe we will be testing more later on. One of the sensors that is being tested is the BMI055 which is an Inertial Measurement Unit (IMU) which has an accelerometer and gyroscope that can detect movement and rotation. Since the SOC-i is only looking at the angular rates, we will only look at the Gyroscope on the IMU. The second of the sensor is HMC5983, which is a magnetometer that measure the magnetic intensities. 
 
+Note that both program is implemented in C so if you don't have a lot of experience with C, then please go through a tutorial before going through the code. Currently, the HMC5983 is more developed and the BMI055 is a work in progress. 
 
-##### Table of Contents
-- [BMI055](#bmi055)
-- [HMC5983](#hmc5983)
-
-
-## BMI055 
-
-BMI055 is an inertial measurement unit (IMU) which can detect the movement and rotation in 6 degree of freedom (6DoF). 
-
-[Back to Table of Contents](#table-of-contents)
-
-## HMC5983
-
-HMC5983 is a temperature compensated three-axis mangeometer.
-
-[Back to Table of Contents](#table-of-contents)
