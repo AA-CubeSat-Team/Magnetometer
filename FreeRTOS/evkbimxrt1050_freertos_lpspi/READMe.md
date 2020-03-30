@@ -18,25 +18,35 @@ near the 2 micro USB port.
 
 ## Examples 
 
-There are some examples provided in MCUXpresso which could be useful to you. You can import the example in MXUXpresso's quickstart panel,
-as seen in the red boxed area Fig. 1. There's a lot of examples which could be overwhelming, but SOC-i will not be using all the features available so pick 
-an example that is most relevant, and see if there's an example of it in FreeRTOS. 
+There are some examples provided in MCUXpresso which could be useful to you. You can import the example in MXUXpresso's quickstart panel,as seen in the red boxed area Fig. 1. There's a lot of examples which could be overwhelming, but SOC-i will not be using all the features available so pick an example that is most relevant, and see if there's an example of it in FreeRTOS. 
+
+![quickpanel](https://github.com/AA-CubeSat-Team/Sensor/blob/master/FreeRTOS/evkbimxrt1050_freertos_lpspi/images/quickpanel.jpg "Quick Panel")
 
 
 
 ## What's in this project
-Once you download this project and place it in to your workspace, the main function (like many of the examples) will be located under the 
-directory source, and in a file called freertos_lpspi.c. In the C file, it use's SPI to read the magnetometer data, sets up tasks, and queuing items. 
-Since the actual cubeSAT will have multiple of the same sensors, we emulated having these sensors connected. For now, it just queue up dummy data, 
-but hopefully we can implement reading multiple sensors soon.
+Once you download this project and place it in to your workspace, the main function (like many of the examples) will be located under the directory source, and in a file called freertos_lpspi.c. In the C file, it use's SPI to read the magnetometer data, sets up tasks, and queuing items. Since the actual cubeSAT will have multiple of the same sensors, we emulated having these sensors connected. For now, it just queue up dummy data, but hopefully we can implement reading multiple sensors soon.
 
-## Editting the Code
+## Edit SPI configuration
 
-You might want to edit som 
+You might want to edit some properties of the SPI such as the baud rate, clock polarity, pins, etc. You could do that by going to one of the perspectives MXUXpresso's provide. Those perspectives are located in the top right, as seen in figure below. 
 
- 
+![MCXpresso](https://github.com/AA-CubeSat-Team/Sensor/blob/master/FreeRTOS/evkbimxrt1050_freertos_lpspi/images/MCUXpresso_main.png "MCUXpresso Main Page")
 
+To see a list of available perspective, you could click on the icon ![perspective][perspective]. We will only look at a few of the perspective, but feel free to explore around (and maybe add them to this text and describe them). The ![dev][develop] is the developer's perspective which is the default view. In that perspective, you could make edit to the source code directly. The ![debug][debug] is the debugging perspective, which is the perspective you'll get when you're running your software while debugging. The ![pins][pin] is the pin perspective, where you could define which pins of the CPU will be used for. For instance, you could change the pins associated to the SPI. In ![peripheral][peripheral] is the peripheral perspective, where you could define and set the configuration of different kind of peripherlal that is available on the board. In ![clock][clock] is the clock perspective, which allows you to change the clock signal of different component of the board. 
+
+[perspective]: https://github.com/AA-CubeSat-Team/Sensor/blob/master/FreeRTOS/evkbimxrt1050_freertos_lpspi/images/perspective.jpg#thumbnail "Perspective"
+[pins]: https://github.com/AA-CubeSat-Team/Sensor/blob/master/FreeRTOS/evkbimxrt1050_freertos_lpspi/images/pins.jpg "Pins"
+[peripheral]: https://github.com/AA-CubeSat-Team/Sensor/blob/master/FreeRTOS/evkbimxrt1050_freertos_lpspi/images/pins.jpg "Peripheral"
+[clock]: https://github.com/AA-CubeSat-Team/Sensor/blob/master/FreeRTOS/evkbimxrt1050_freertos_lpspi/images/clocks.jpg "Clocks"
+[debug]: https://github.com/AA-CubeSat-Team/Sensor/blob/master/FreeRTOS/evkbimxrt1050_freertos_lpspi/images/debug.jpg "Debug"
+[develop]: https://github.com/AA-CubeSat-Team/Sensor/blob/master/FreeRTOS/evkbimxrt1050_freertos_lpspi/images/develop.jpg "Develop"
 ## 
 
 ## Useful Links
 
+
+img[src*="#thumbnail"] {
+   width:150px;
+   height:100px;
+}
