@@ -1,5 +1,5 @@
 cc=gcc
-CFLAGS=-Wall -g
+CFLAGS=-Wall -g -std=c99
 DEPS = ./lib/I2Cdrive.h ./src/HMC5983.h ./lib/commonLib.h
 OBJ = ./src/Main.o ./lib/I2Cdrive.o ./src/HMC5983.o 
 EX1 = ./src/example1.o ./lib/I2Cdrive.o ./src/HMC5983.o 
@@ -12,28 +12,28 @@ EX6 = ./src/example6.o ./lib/I2Cdrive.o ./src/HMC5983.o
 %.o: %.c $(DEPS)
 	$(cc) $(CFLAGS) -c -o $@ $< 
 
-all: example1.exe example2.exe example3.exe example4.exe example5.exe example6.exe
+all: example1 example2 example3 example4 example5 example6
 
 #main.exe: $(OBJ)
 #	$(cc) -o $@ $^ -lm 
 
-example1.exe: $(EX1)
+example1: $(EX1)
 	$(cc) $(CFLAGS) -o $@ $^ -lm
 
-example2.exe: $(EX2)
+example2: $(EX2)
 	$(cc) $(CFLAGS) -o $@ $^  -lm
 
-example3.exe: $(EX3)
+example3: $(EX3)
 	$(cc) $(CFLAGS) -o $@ $^ -lm
 
-example4.exe: $(EX4)
+example4: $(EX4)
 	$(cc) $(CFLAGS) -o $@ $^ -lm 
 
-example5.exe: $(EX5)
+example5: $(EX5)
 	$(cc) $(CFLAGS) -o $@ $^ -lm
 
-example6.exe: $(EX6)
+example6: $(EX6)
 	$(cc) $(CFLAGS) -o $@ $^ -lgsl -lm
 
 clean :
-	rm ./src/example1.o ./src/example2.o ./src/example3.o ./src/example4.o ./src/example5.o ./src/example6.o ./src/HMC5983.o ./lib/I2Cdrive.o example1.exe example2.exe example3.exe example4.exe example5.exe example6.exe 
+	rm ./src/example1.o ./src/example2.o ./src/example3.o ./src/example4.o ./src/example5.o ./src/example6.o ./src/HMC5983.o ./lib/I2Cdrive.o example1 example2 example3 example4 example5 example6 

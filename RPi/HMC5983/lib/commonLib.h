@@ -10,7 +10,13 @@
 #include <unistd.h>
 #include <fcntl.h>
 #include <sys/ioctl.h>
-#include <linux/i2c-dev.h>
+//
+#ifdef __linux__
+	#include <linux/i2c-dev.h>
+#else
+	#include "linux/i2c-dev.h"
+#endif
+//
 #include <math.h>
 #include <signal.h>
 

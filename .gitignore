@@ -1,12 +1,15 @@
-# C code
+## C code
 *.o
 *.exe
 *.c~
 *.a
 *.d
 
-# Simulink
+## Simulink
 *.slx.autosave
 *.slx.original
 *.slxc
 slprj/*
+*.eep
+*.hex
+*.elf
