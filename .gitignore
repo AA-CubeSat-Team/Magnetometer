@@ -1,0 +1,12 @@
+# C code
+*.o
+*.exe
+*.c~
+*.a
+*.d
+
+# Simulink
+*.slx.autosave
+*.slx.original
+*.slxc
+slprj/*
